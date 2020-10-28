@@ -3037,6 +3037,9 @@ var AssetFemale3DCG = [
 					{ Name: "Text" },
 				]
 			},
+			{
+				Name: "WoodenTray", Value: 100, Priority: 38, Difficulty: 1, Time: 5, Random: false, Extended: true, AllowColorize: false, AllowType: ["Empty","Cookies","Cake","Drinks","SpankingToys"],
+			}
 		],
 		Color: ["Default"]
 	},
