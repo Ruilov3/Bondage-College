@@ -184,6 +184,7 @@ Panties,ChinesePanties1,Chinese Panties
 Panties,LeatherStrapPanties1,Leather Strap Panties
 Panties,CowPrintedPanties,Cow Printed Panties
 Panties,LatexPanties2,Latex Panties
+Panties,PilotPanties,Pilot Panties
 Socks,,Socks
 Socks,Socks0,Ankle
 Socks,Socks1,Short
@@ -352,6 +353,7 @@ Mask,KittyMask3,Full Kitty Mask
 Mask,LaceMask1,Bat Mask
 Mask,LaceMask2,Venice Festival Mask
 Mask,FuturisticVisor,Futuristic Visor
+Mask,OpenFaceHood,Open Face Hood
 TailStraps,,Tail Strap
 TailStraps,TailStrap,Kitty Tail Strap
 TailStraps,HorseTailStrap,Horse Tail Strap
@@ -458,6 +460,27 @@ HairBack,HairBack21,Style 16
 HairBack,HairBack22,Style 17
 HairBack,HairBack23,Style 18
 HairBack,HairBack24,Style 19
+HairBack,HairBack25,Style 20
+HairBack,HairBack26,Style 21
+HairBack,HairBack27,Style 22
+HairBack,HairBack28,Style 23
+HairBack,HairBack29,Style 24
+HairBack,HairBack30,Style 25
+HairBack,HairBack31,Style 26
+HairBack,HairBack32,Style 27
+HairBack,HairBack33,Style 28
+HairBack,HairBack34,Style 29
+HairBack,HairBack35,Style 30
+HairBack,HairBack36,Style 31
+HairBack,HairBack37,Style 32
+HairBack,HairBack38,Style 33
+HairBack,HairBack39,Style 34
+HairBack,HairBack40,Style 35
+HairBack,HairBack41,Style 36
+HairBack,HairBack42,Style 37
+HairBack,HairBack43,Style 38
+HairBack,HairBack44,Style 39
+HairBack,HairBack45,Style 40
 Eyes,,Left eye
 Eyes,Eyes1,Style 1
 Eyes,Eyes2,Style 2
@@ -652,6 +675,7 @@ ItemTorso,LatexCorset1,Latex Corset
 ItemTorso,LeatherStrapBra1,Leather Strap Bra
 ItemTorso,CrotchChain, Crotch Chain
 ItemTorso,StuddedHarness,Studded Harness
+ItemTorso,HeavyLatexCorset,Heavy Latex Corset
 ItemNipples,,Nipples
 ItemNipples,NippleClamp,Nipple Clamps
 ItemNipples,VibeNippleClamp,Vibrating Nipple Clamps
@@ -681,6 +705,7 @@ ItemNipplesPiercings,NippleChastityPiercing1,Chastity Guard Shield
 ItemNipplesPiercings,NippleChastityPiercing2,Chastity Cross Shield
 ItemNipplesPiercings,VibeHeartPiercings,Vibrating Heart Piercings
 ItemNipplesPiercings,BellPiercing,Nipple Bell Piercings
+ItemNipplesPiercings,CrossedStraightPiercing,Crossed Straight Piercings
 ItemBreast,,Breasts
 ItemBreast,MetalChastityBra,Metal Chastity Bra
 ItemBreast,PolishedChastityBra,Polished Chastity Bra
@@ -748,6 +773,7 @@ ItemHands,,Hands
 ItemHands,PaddedMittens,Padded Mittens
 ItemHands,PawMittens,Paw Mittens
 ItemHands,LeatherMittens,Leather Mittens
+ItemHands,FuturisticMittens,Futuristic Mittens
 ItemHands,PaddedLeatherMittens,Padded Leather Mittens
 ItemHands,PolishedMittens,Polished Steel Mittens
 ItemHands,DuctTape,Duct Tape
@@ -1010,6 +1036,7 @@ ItemNose,NoseHook,Nose Hook
 ItemNose,NoseRing,Nose Ring
 ItemNose,DuctTape,Duct Tape
 ItemNose,NosePlugs,Nose Plugs
+ItemNose,BarbelPiercing,Barbel Piercing
 ItemHood,,Head
 ItemHood,LeatherHoodSealed,Sealed Leather Hood
 ItemHood,PolishedSteelHood,Polished Steel Hood
@@ -1029,6 +1056,8 @@ ItemHood,LeatherHoodOpenMouth,Leather Hood Mouth
 ItemHood,CanvasHood,Canvas Hood
 ItemHood,Pantyhose,Pantyhose
 ItemHood,GP9GasMask,GP-9 Gas Mask
+ItemHood,OpenFaceHood,Open Face Hood
+ItemHood,Gwenhood,Gwen Hood
 ItemEars,,Ears
 ItemEars,LightDutyEarPlugs,Light Duty Ear Plugs
 ItemEars,HeavyDutyEarPlugs,Heavy Duty Ear Plugs
@@ -1039,6 +1068,7 @@ ItemMisc,MetalPadlock,Metal Padlock
 ItemMisc,IntricatePadlock,Intricate Padlock
 ItemMisc,TimerPadlock,Five Minutes Padlock
 ItemMisc,CombinationPadlock,Combination Padlock
+ItemMisc,PasswordPadlock,Password Lock
 ItemMisc,OwnerPadlock,Owner Padlock
 ItemMisc,OwnerTimerPadlock,Owner Timer Padlock
 ItemMisc,LoversPadlock,Lovers Padlock

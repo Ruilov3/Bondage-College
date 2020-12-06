@@ -2,10 +2,18 @@ ClothStudentOutfit3White,Shirt
 ClothStudentOutfit3Color,Trim
 ClothBabydollDress1Dress,Dress
 ClothBabydollDress1Trim,Trim
+ClothAdultBabyDress1Dress,Dress
+ClothAdultBabyDress1Sash,Sash
+ClothAdultBabyDress1Trim,Trim
 ClothDressFurFabric,Dress
 ClothDressFurFur,Fur
 ClothCorsetShirtShirt,Shirt
 ClothCorsetShirtCorset,Corset
+ClothChineseDress2Dress,Main
+ClothChineseDress2Edges,Trim
+ClothCollegeOutfit1Shirt,Shirt
+ClothCollegeOutfit1Tie,Tie
+ClothCollegeOutfit1Skirt,Skirt
 ClothAccessoryBouquetBase,Holder
 ClothAccessoryBouquetFlowers,Flowers
 ClothAccessoryCapeFront,Front
@@ -38,6 +46,8 @@ SocksSocks6Sock,Sock
 SocksSocks6Frill,Trim
 SocksSocksFurFabric,Sock
 SocksSocksFurFur,Fur
+SocksSocksStriped1Light,Light Stripes
+SocksSocksStriped1Dark,Dark Stripes
 HatSanta1Fabric,Hat
 HatSanta1Fur,Fur
 HatBonnet1Base,Bonnet
@@ -161,6 +171,13 @@ ItemArmsHempRope,Ropes
 ItemArmsHempRopeSuspension,Suspension Rope
 ItemArmsChains,Chains
 ItemArmsChainsSuspension,Suspension Chain
+ItemArmsFuturisticArmbinderDisplay,Display
+ItemArmsFuturisticArmbinderBinder,Binder
+ItemArmsFuturisticArmbinderBand,Band
+ItemArmsFuturisticArmbinderStraps,Straps
+ItemHandsFuturisticMittensBody,Body
+ItemHandsFuturisticMittensMesh,Mesh
+ItemHandsFuturisticMittensDisplay,Display
 ItemNeckHighCollarLeather,Leather
 ItemNeckHighCollarRings,Rings
 ItemNeckPostureCollarCollar,Collar
@@ -172,6 +189,7 @@ ItemNeckLeatherCollarRing,Ring
 ItemNeckLeatherChokerLeather,Leather
 ItemNeckLeatherChokerMetal,Metal
 ItemNeckFuturisticCollarBand,Band
+ItemNeckFuturisticCollarMesh,Mesh (for copying to items)
 ItemNeckFuturisticCollarDisplay,Display
 ItemNeckOrnateCollarCollar,Collar
 ItemNeckOrnateCollarGem,Gems
@@ -233,6 +251,9 @@ ItemMouthWiffleGagStrap,Strap
 ItemMouthWiffleGagBall,Ball
 ItemMouthHarnessBallGagBall,Ball
 ItemMouthHarnessBallGagHarness,Harness
+ItemMouthHarnessPonyBitsMetal, Metal
+ItemMouthHarnessPonyBitsStraps, Straps
+ItemMouthHarnessPonyBitsBobble, Bobble
 ItemMouthCupholderGagGag,Gag
 ItemMouthCupholderGagHolder,Holder
 ItemMouthCupholderGagCup,Cup
@@ -281,6 +302,9 @@ ItemMouth2WiffleGagStrap,Strap
 ItemMouth2WiffleGagBall,Ball
 ItemMouth2HarnessBallGagBall,Ball
 ItemMouth2HarnessBallGagHarness,Harness
+ItemMouth2HarnessPonyBitsMetal, Metal
+ItemMouth2HarnessPonyBitsStraps, Straps
+ItemMouth2HarnessPonyBitsBobble, Bobble
 ItemMouth2CupholderGagGag,Gag
 ItemMouth2CupholderGagHolder,Holder
 ItemMouth2CupholderGagCup,Cup
@@ -332,6 +356,9 @@ ItemMouth3DildoGagStrap,Strap
 ItemMouth3DildoGagDildo,Dildo
 ItemMouth3HarnessBallGag1Ball,Ball
 ItemMouth3HarnessBallGag1Strap,Strap
+ItemMouth3HarnessPonyBitsMetal, Metal
+ItemMouth3HarnessPonyBitsStraps, Straps
+ItemMouth3HarnessPonyBitsBobble, Bobble
 ItemMouth3BallGagBall,Ball
 ItemMouth3BallGagStrap,Strap
 ItemMouth3BallGagMaskStrap,Strap
@@ -383,6 +410,9 @@ ItemBreastFuturisticBraText,Text
 ItemPelvisFuturisticChastityBeltScreen,Screen
 ItemPelvisFuturisticChastityBeltMesh,Mesh
 ItemPelvisFuturisticChastityBeltBelt,Belt
+PantiesPilotPantiesLayer1,Suit
+PantiesPilotPantiesLayer2,Highlights
+PantiesPilotPantiesLayer3,Center
 SuitLowerPilotSuitLayer1,Suit
 SuitLowerPilotSuitLayer2,Highlights
 SuitLowerPilotSuitLayer3,Center
