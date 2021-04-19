@@ -23,14 +23,15 @@ const HempRopeFeetOptions = [
 	}, {
 		Name: "Suspension",
 		BondageLevel: 6,
-		Property: { Type: "Suspension", SetPose: ["LegsClosed", "Suspension"], Difficulty: 6 },
+		Property: { Type: "Suspension", SetPose: ["LegsClosed", "Suspension"], AllowActivePose: [], Difficulty: 6 },
 		Expression: [{ Group: "Blush", Name: "High", Timer: 30 }],
 		Prerequisite: ["NotKneeling", "NotMounted", "NotChained", "NotHogtied"]
 	}, {
 		Name: "BedSpreadEagle",
 		BondageLevel: 1,
-		Property: { Type: "BedSpreadEagle", Effect: ["Block", "Freeze", "Prone"], Block: ["ItemLegs", "ItemBoots", "ItemDevices"], SetPose: ["Spread"], Difficulty: 5 },
-		Prerequisite: ["OnBed", "NoItemLegs"]
+		Property: { Type: "BedSpreadEagle", Effect: ["Freeze", "Prone"], Block: ["ItemLegs", "ItemBoots", "ItemDevices"], AllowActivityOn: ["ItemLegs", "ItemBoots"], SetPose: ["Spread"], Difficulty: 5 },
+		Prerequisite: ["OnBed", "NoItemLegs", "LegsOpen"],
+		SelfBlockCheck: true,
 	}
 ];
 

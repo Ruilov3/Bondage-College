@@ -35,7 +35,7 @@ function InformationSheetRun() {
 	DrawCharacter(C, 50, 50, 0.9);
 	MainCanvas.textAlign = "left";
 	DrawTextFit(TextGet("Name") + " " + C.Name, 550, 125, 450, "Black", "Gray");
-	DrawTextFit(TextGet("Title") + " " + TextGet("Title" + CurrentTitle), 550, 200, 450, (TitleIsForced(CurrentTitle)) ? "Red" : "Black", "Gray");
+	DrawTextFit(TextGet("Title") + " " + TextGet("Title" + CurrentTitle), 550, 200, 450, TitleIsForced(CurrentTitle) ? "Red" : TitleIsEarned(CurrentTitle) ? "#0000BF" : "Black", "Gray");
 	DrawTextFit(TextGet("MemberNumber") + " " + ((C.MemberNumber == null) ? TextGet("NoMemberNumber") : C.MemberNumber.toString()), 550, 275, 450, "Black", "Gray");
 
 	// Some info are not available for online players
@@ -160,10 +160,10 @@ function InformationSheetSecondScreenRun() {
 		SkillGetLevel(C, "Evasion");
 		if ((C.ID == 0) && (SkillModifier != 0)) {
 			var PlusSign = (SkillModifier > 0) ? "+" : "";
-			DrawText(TextGet("SkillModifier"), 1425, 575, "Black", "Gray");
-			DrawText(TextGet("SkillBondage") + " " + PlusSign + SkillModifier, 1425, 650, "Black", "Gray");
-			DrawText(TextGet("SkillEvasion") + " " + PlusSign + SkillModifier, 1425, 725, "Black", "Gray");
-			DrawText(TextGet("SkillModifierDuration") + " " + (TimermsToTime(LogValue("ModifierDuration", "SkillModifier") - CurrentTime)), 1425, 800, "Black", "Gray");
+			DrawText(TextGet("SkillModifier"), 1425, 650, "Black", "Gray");
+			DrawText(TextGet("SkillBondage") + " " + PlusSign + SkillModifier, 1425, 725, "Black", "Gray");
+			DrawText(TextGet("SkillEvasion") + " " + PlusSign + SkillModifier, 1425, 800, "Black", "Gray");
+			DrawText(TextGet("SkillModifierDuration") + " " + (TimermsToTime(LogValue("ModifierDuration", "SkillModifier") - CurrentTime)), 1425, 875, "Black", "Gray");
 		}
 
 	}

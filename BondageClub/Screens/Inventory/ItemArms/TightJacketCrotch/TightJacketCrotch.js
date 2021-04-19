@@ -68,7 +68,7 @@ function InventoryItemArmsTightJacketCrotchClick() {
 function InventoryItemArmsTightJacketCrotchValidate(C) {
 	var Allowed = "";
 	if (InventoryItemHasEffect(DialogFocusItem, "Lock", true) && !DialogCanUnlock(C, DialogFocusItem)) {
-		Allowed = DialogFind(Player, "CantChangeWhileLocked");
+		Allowed = DialogFindPlayer("CantChangeWhileLocked");
 	}
 	return Allowed;
 }
@@ -84,7 +84,7 @@ function InventoryItemArmsTightJacketCrotchPublishAction(C, Option) {
 	var msg = "JacketPrepSet" + Option.Name;
 	var Dictionary = [];
 	Dictionary.push({ Tag: "SourceCharacter", Text: Player.Name, MemberNumber: Player.MemberNumber });
-	Dictionary.push({ Tag: "TargetCharacter", Text: C.Name, MemberNumber: C.MemberNumber });
+	Dictionary.push({ Tag: "DestinationCharacter", Text: C.Name, MemberNumber: C.MemberNumber });
 	ChatRoomPublishCustomAction(msg, true, Dictionary);
 }
 

@@ -1,7 +1,7 @@
 "use strict";
 var InventoryItemArmsDuctTapeMessage = "SelectTapeWrapping";
 
-const InventoryItemArmsDuctTapeOptions = [
+var InventoryItemArmsDuctTapeOptions = [
 	{
 		Name: "Arms",
 		Property: {Type: null, Difficulty: 1},
@@ -50,6 +50,17 @@ const InventoryItemArmsDuctTapeOptions = [
 			Difficulty: 7,
 		}
 	},
+	{
+		Name: "ExposedComplete",
+		SelfBondageLevel: 10,
+		Prerequisite: ["NoOuterClothes"],
+		Property: {
+			Type: "ExposedComplete",
+			SetPose: ["BackElbowTouch"],
+			Block: ["ItemVulva", "ItemButt", "ItemPelvis", "ItemTorso", "ItemVulvaPiercings", "ItemBreast"],
+			Difficulty: 7,
+		}
+	},
 
 ];
 
@@ -90,6 +101,7 @@ function InventoryItemArmsDuctTapePublishAction(C, Option, PreviousOption) {
 	var Dictionary = [
 		{ Tag: "SourceCharacter", Text: Player.Name, MemberNumber: Player.MemberNumber },
 		{ Tag: "TargetCharacter", Text: C.Name, MemberNumber: C.MemberNumber },
+		{ Tag: "DestinationCharacter", Text: C.Name, MemberNumber: C.MemberNumber },
 	];
 	ChatRoomPublishCustomAction(msg, true, Dictionary);
 }

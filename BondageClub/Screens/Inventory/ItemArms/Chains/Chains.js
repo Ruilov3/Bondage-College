@@ -2,14 +2,14 @@
 
 const InventoryItemArmsChainsOptions = [
 	{
-		Name: "BoxTie",
-		BondageLevel: null,
-		Property: { Type: null, Effect: ["Block", "Prone"], SetPose: ["BackBoxTie"], Difficulty: 1 }
-	}, {
 		Name: "WristTie",
 		BondageLevel: null,
 		Property: { Type: "WristTie", Effect: ["Block", "Prone"], SetPose: ["BackBoxTie"], Difficulty: 1 },
 		Expression: [{ Group: "Blush", Name: "Low", Timer: 5 }]
+	}, {
+		Name: "BoxTie",
+		BondageLevel: null,
+		Property: { Type: null, Effect: ["Block", "Prone"], SetPose: ["BackBoxTie"], Difficulty: 1 }
 	}, {
 		Name: "ChainCuffs",
 		BondageLevel: null,
@@ -18,36 +18,40 @@ const InventoryItemArmsChainsOptions = [
 	}, {
 		Name: "WristElbowTie",
 		BondageLevel: 2,
-		Property: { Type: "WristElbowTie", Effect: ["Block", "Prone"], SetPose: ["BackElbowTouch"], Difficulty: 2 },
+		Property: { Type: "WristElbowTie", Effect: ["Block", "Prone", "NotSelfPickable"], SetPose: ["BackElbowTouch"], Difficulty: 2 },
 		Expression: [{ Group: "Blush", Name: "Medium", Timer: 5 }]
 	}, {
 		Name: "WristElbowHarnessTie",
 		BondageLevel: 3,
-		Property: { Type: "WristElbowHarnessTie", Effect: ["Block", "Prone"], SetPose: ["BackElbowTouch"], Difficulty: 3 },
+		Property: { Type: "WristElbowHarnessTie", Effect: ["Block", "Prone", "NotSelfPickable"], SetPose: ["BackElbowTouch"], Difficulty: 3 },
 		Expression: [{ Group: "Blush", Name: "Medium", Timer: 5 }]
 	}, {
 		Name: "KneelingHogtie",
 		BondageLevel: 4,
 		Prerequisite: ["NotMounted", "NotSuspended"],
-		Property: { Type: "KneelingHogtie", Effect: ["Block", "Freeze", "Prone"], Block: ["ItemHands", "ItemLegs", "ItemFeet", "ItemBoots", "ItemDevices"], SetPose: ["Kneel", "BackElbowTouch"], Difficulty: 3 },
-		Expression: [{ Group: "Blush", Name: "Medium", Timer: 10 }]
+		Property: { Type: "KneelingHogtie", Effect: ["Block", "Freeze", "Prone", "NotSelfPickable"], Block: ["ItemHands", "ItemLegs", "ItemFeet", "ItemBoots", "ItemDevices"], AllowActivityOn: ["ItemHands", "ItemLegs", "ItemFeet", "ItemBoots"], SetPose: ["Kneel", "BackElbowTouch"], Difficulty: 3 },
+		Expression: [{ Group: "Blush", Name: "Medium", Timer: 10 }],
+		SelfBlockCheck: true,
 	}, {
 		Name: "Hogtied",
 		BondageLevel: 4,
 		Prerequisite: ["NotMounted", "NotSuspended", "CannotBeHogtiedWithAlphaHood"],
-		Property: { Type: "Hogtied", Effect: ["Block", "Freeze", "Prone"], Block: ["ItemHands", "ItemLegs", "ItemFeet", "ItemBoots", "ItemDevices"], SetPose: ["Hogtied"], Difficulty: 3 },
-		Expression: [{ Group: "Blush", Name: "Medium", Timer: 10 }]
+		Property: { Type: "Hogtied", Effect: ["Block", "Freeze", "Prone", "NotSelfPickable"], Block: ["ItemHands", "ItemLegs", "ItemFeet", "ItemBoots", "ItemDevices"], AllowActivityOn: ["ItemHands", "ItemLegs", "ItemFeet", "ItemBoots"], SetPose: ["Hogtied"], Difficulty: 3 },
+		Expression: [{ Group: "Blush", Name: "Medium", Timer: 10 }],
+		SelfBlockCheck: true,
 	}, {
 		Name: "AllFours",
 		BondageLevel: 6,
 		Prerequisite: ["NotMounted", "NotSuspended", "CannotBeHogtiedWithAlphaHood"],
-		Property: { Type: "AllFours", Effect: ["ForceKneel"], Block: ["ItemLegs", "ItemFeet", "ItemBoots", "ItemDevices"], SetPose: ["AllFours"], Difficulty: 3 },
-		Expression: [{ Group: "Blush", Name: "Medium", Timer: 10 }]
+		Property: { Type: "AllFours", Effect: ["ForceKneel", "NotSelfPickable"], Block: ["ItemLegs", "ItemFeet", "ItemBoots", "ItemDevices"],  AllowActivityOn: ["ItemLegs", "ItemFeet", "ItemBoots"], SetPose: ["AllFours"], Difficulty: 3 },
+		Expression: [{ Group: "Blush", Name: "Medium", Timer: 10 }],
+		SelfBlockCheck: true,
 	}, {
 		Name: "SuspensionHogtied",
 		BondageLevel: 8,
 		Prerequisite: ["NotMounted", "NotChained", "NotSuspended", "CannotBeHogtiedWithAlphaHood"],
-		Property: { Type: "SuspensionHogtied", Effect: ["Block", "Freeze", "Prone"], Block: ["ItemHands", "ItemLegs", "ItemFeet", "ItemBoots"], SetPose: ["Hogtied", "SuspensionHogtied"], Difficulty: 6 },
+		Property: { Type: "SuspensionHogtied", Effect: ["Block", "Freeze", "Prone", "NotSelfPickable"], Block: ["ItemHands", "ItemLegs", "ItemFeet", "ItemBoots"], AllowActivityOn: ["ItemHands", "ItemLegs", "ItemFeet", "ItemBoots"], SetPose: ["Hogtied", "SuspensionHogtied"], Difficulty: 6,
+			OverrideHeight: { Height: 0, Priority: 51, HeightRatioProportion: 0 } },
 		Expression: [{ Group: "Blush", Name: "Medium", Timer: 10 }],
 	}
 ];
@@ -107,15 +111,16 @@ function InventoryItemArmsChainsNpcDialog(C, Option) {
 /**
  * Validates, if the chosen option is possible. Sets the global variable 'DialogExtendedMessage' to the appropriate error message, if not.
  * @param {Character} C - The character to validate the option for
+ * @param {ExtendedItemOption} Option - The selected option
  * @returns {string} - Returns false and sets DialogExtendedMessage, if the chosen option is not possible.
  */
 function InventoryItemArmsChainsValidate(C, Option) {
 	var Allowed = "";
 
 	if (InventoryItemHasEffect(DialogFocusItem, "Lock", true)) {
-		Allowed = DialogFind(Player, "CantChangeWhileLocked");
-	}else if (Option.Prerequisite) {
-		if (!InventoryAllow(C, Option.Prerequisite, true)) {
+		Allowed = DialogFindPlayer("CantChangeWhileLocked");
+	} else if (Option.Prerequisite) {
+		if (!ExtendedItemSelfProofRequirementCheck(C, Option.Prerequisite)) {
 			Allowed = DialogText;
 		}
 	}

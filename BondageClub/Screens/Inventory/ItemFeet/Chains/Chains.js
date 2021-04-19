@@ -3,12 +3,12 @@ var InventoryItemFeetChainsOptions = [
 	{
 		Name: "Basic",
 		BondageLevel: 0,
-		Property: { Type: null, Difficulty: 0, SetPose: null },
+		Property: { Type: null, Difficulty: 0, SetPose: ["LegsClosed"] },
 	},
 	{
 		Name: "Strict",
 		BondageLevel: 2,
-		Property: { Type: "Strict", Difficulty: 2, SetPose: null },
+		Property: { Type: "Strict", Difficulty: 2, SetPose: ["LegsClosed"] },
 	},
 	{
 		Name: "Suspension",
@@ -18,6 +18,7 @@ var InventoryItemFeetChainsOptions = [
 			Type: "Suspension",
 			Difficulty: 4,
 			SetPose: ["Suspension", "LegsClosed"],
+			AllowActivePose: [],
 		},
 	},
 ];
@@ -84,7 +85,7 @@ function InventoryItemFeetChainsValidate(C, Option) {
 	if (Option.Prerequisite != null && !InventoryAllow(C, Option.Prerequisite, true)) {
 		Allowed = DialogText;
 	} else if (InventoryItemHasEffect(DialogFocusItem, "Lock", true)) {
-		Allowed = DialogFind(Player, "CantChangeWhileLocked");
+		Allowed = DialogFindPlayer("CantChangeWhileLocked");
 	}
 
 	return Allowed;
