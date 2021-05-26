@@ -134,6 +134,28 @@ var AssetFemale3DCGExtended = {
 				},
 			},
 		}, // CeilingShackles
+		SteelCuffs: {
+			Archetype: ExtendedArchetype.TYPED,
+			Config: {
+				Options: [
+					{
+						Name: "None",
+						Property: { Type: null }
+					},
+					{
+						Name: "Wrist",
+						Property: {
+							Type: "Wrist",
+							Effect: ["Block", "Prone"],
+							SetPose: ["BackBoxTie"]
+						}
+					}
+				],
+				Dialog: {
+					Load: "SelectBondagePosition"
+				}
+			}
+		}, // SteelCuffs
 		BitchSuit: {
 			Archetype: ExtendedArchetype.TYPED,
 			Config: {
@@ -156,6 +178,18 @@ var AssetFemale3DCGExtended = {
 			},
 		}, // BitchSuit
 	}, // ItemArms
+	ItemNeck: {
+		ShinySteelCollar: {
+			Archetype: ExtendedArchetype.TYPED,
+			Config: {
+				Options: [
+					{ Name: "NoRing", Property: { Type: null } },
+					{ Name: "Ring", Property: { Type: "Ring" } }
+				],
+				DrawImages: false
+			}
+		} // ShinySteelCollar
+	}, // ItemNeck
 	ItemHood: {
 		KirugumiMask: {
 			Archetype: ExtendedArchetype.MODULAR,
@@ -622,6 +656,75 @@ var AssetFemale3DCGExtended = {
 				},
 			},
 		}, // FunnelGag
+		HarnessPonyBits: {
+			Archetype: ExtendedArchetype.TYPED,
+			Config: {
+				Options: [
+					{
+						Name: "Detached",
+						Property: {
+							Type: "Detached",
+							Effect: ["OpenMouth"]
+						},
+					},
+					{
+						Name: "Attached",
+						Property: {
+							Type: null,
+							Effect: ["BlockMouth", "GagLight"]
+						},
+					},
+				],
+			},
+		}, // PonyBit
+		DentalGag: {
+			Archetype: ExtendedArchetype.TYPED,
+			Config: {
+				ChatTags: [CommonChatTags.SOURCE_CHAR, CommonChatTags.TARGET_CHAR],
+				Options: [
+					{
+						Name: "Open",
+						Property: {
+							Type: null,
+							Effect: ["OpenMouth", "GagLight"],
+						},
+					},
+					{
+						Name: "Closed",
+						Property: {
+							Type: "Closed",
+							Effect: ["BlockMouth", "GagMedium"],
+						},
+					},
+				]
+			},
+		}, // DentalGag
+    Ribbons: {
+			Archetype: ExtendedArchetype.TYPED,
+			Config: {
+				Options: [
+					{
+						Name: "Basic",
+						Property: {
+							Type: null,
+							Effect: ["BlockMouth", "GagVeryLight"],
+						},
+					},
+					{
+						Name: "Bow",
+						Property: {
+							Type: "Bow",
+							Effect: ["BlockMouth", "GagLight"],
+						},
+					},
+                ],
+				Dialog: {
+					Load: "SelectRibbonType",
+					TypePrefix: "RibbonType",
+					ChatPrefix: "RibbonsGagSet",
+				},
+			},
+		}, // Ribbons
 	}, // ItemMouth
 	ItemMouth2: {
 		ClothGag: {
@@ -647,6 +750,10 @@ var AssetFemale3DCGExtended = {
 		CupholderGag: {
 			Archetype: ExtendedArchetype.TYPED,
 			CopyConfig: { GroupName: "ItemMouth", AssetName: "CupholderGag" },
+		},
+		Ribbons: {
+            Archetype: ExtendedArchetype.TYPED,
+            CopyConfig: { GroupName: "ItemMouth", AssetName: "Ribbons" },
 		},
 	}, // ItemMouth2
 	ItemMouth3: {
@@ -674,6 +781,10 @@ var AssetFemale3DCGExtended = {
 			Archetype: ExtendedArchetype.TYPED,
 			CopyConfig: { GroupName: "ItemMouth", AssetName: "CupholderGag" },
 		},
+		Ribbons: {
+            Archetype: ExtendedArchetype.TYPED,
+            CopyConfig: { GroupName: "ItemMouth", AssetName: "Ribbons" },
+		},
 	}, // ItemMouth3
 	Mask: {
 		BunnyMask1: {
@@ -696,6 +807,31 @@ var AssetFemale3DCGExtended = {
 			}
 		} // BunnyMask1
 	}, // Mask
+	ItemFeet: {
+		SteelAnkleCuffs: {
+			Archetype: ExtendedArchetype.TYPED,
+			Config: {
+				Options: [
+					{
+						Name: "None",
+						Property: {	Type: null }
+					},
+					{
+						Name: "Closed",
+						Property: {
+							Type: "Closed",
+							Effect: ["Prone", "Freeze"],
+							SetPose: ["LegsClosed"],
+							FreezeActivePose: ["BodyLower"]
+						}
+					}
+				],
+				Dialog: {
+					Load: "SelectBondagePosition"
+				}
+			}
+		} // SteelAnkleCuffs
+	}, // ItemFeet
 	ItemMisc: {
 		ServingTray: {
 			Archetype: ExtendedArchetype.TYPED,

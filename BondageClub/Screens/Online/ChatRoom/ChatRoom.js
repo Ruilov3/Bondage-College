@@ -1515,8 +1515,8 @@ function ChatRoomSendChat() {
 /**
  * Publishes common player actions (add, remove, swap) to the chat.
  * @param {Character} C - Character on which the action is done.
- * @param {Asset} StruggleProgressPrevItem - The item that has been removed.
- * @param {Asset} StruggleProgressNextItem - The item that has been added.
+ * @param {Item} StruggleProgressPrevItem - The item that has been removed.
+ * @param {Item} StruggleProgressNextItem - The item that has been added.
  * @param {boolean} LeaveDialog - Whether to leave the current dialog after publishing the action.
  * @param {string} [Action] - Action modifier
  * @returns {void} - Nothing.
@@ -1563,7 +1563,7 @@ function ChatRoomPublishAction(C, StruggleProgressPrevItem, StruggleProgressNext
 /**
  * Updates an item on character for everyone in a chat room - replaces ChatRoomCharacterUpdate to cut on the lag.
  * @param {Character} C - Character to update.
- * @param {string} Group - Item group to update.
+ * @param {string} [Group] - Item group to update.
  * @returns {void} - Nothing.
  */
 function ChatRoomCharacterItemUpdate(C, Group) {
@@ -1700,6 +1700,11 @@ function ChatRoomMessage(data) {
 					}
 				}
 				else if (msg == "GiveLockpicks") DialogLentLockpicks = true;
+				else if (msg == "RequestFullKinkyDungeonData") {
+					KinkyDungeonStreamingPlayers.push(SenderCharacter.MemberNumber);
+					if (CurrentScreen == "KinkyDungeon")
+						KinkyDungeonSendData(KinkyDungeonPackData(true, true, true, true), SenderCharacter.MemberNumber)
+				}
 
 				// If the message is still hidden after any modifications, stop processing
 				if (data.Type == "Hidden") return;
@@ -2948,7 +2953,9 @@ function ChatRoomPayQuest(data) {
  * @returns {void} - Nothing
  */
 function ChatRoomGameResponse(data) {
-	if (ChatRoomGame == "LARP") GameLARPProcess(data);
+	if (data.Data.KinkyDungeon) 
+        KinkyDungeonHandleData(data.Data.KinkyDungeon, data.Sender);
+    else if (ChatRoomGame == "LARP") GameLARPProcess(data);
 }
 
 /**
