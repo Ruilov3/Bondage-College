@@ -25,7 +25,8 @@
 
 /**
  * A lookup for the typed item configurations for each registered typed item
- * @const {object.<string, TypedItemData>}
+ * @const
+ * @type {Record<string, TypedItemData>}
  * @see {@link TypedItemData}
  */
 const TypedItemDataLookup = {};
@@ -35,6 +36,7 @@ const TypedItemDataLookup = {};
  * - TO_ONLY - The item has one chatroom message per type (indicating that the type has been selected)
  * - FROM_TO - The item has a chatroom message for from/to type pairing
  * @type {{TO_ONLY: string, FROM_TO: string}}
+ * @enum {string}
  */
 const TypedItemChatSetting = {
 	TO_ONLY: "toOnly",
@@ -53,6 +55,7 @@ function TypedItemRegister(asset, config) {
 	TypedItemCreateLoadFunction(data);
 	TypedItemCreateDrawFunction(data);
 	TypedItemCreateClickFunction(data);
+	TypedItemCreateValidateFunction(data);
 	TypedItemCreatePublishFunction(data);
 	TypedItemCreateNpcDialogFunction(data);
 	TypedItemGenerateAllowType(data);
@@ -66,7 +69,9 @@ function TypedItemRegister(asset, config) {
  * @param {TypedItemConfig} config - The item's extended item configuration
  * @returns {TypedItemData} - The generated typed item data for the asset
  */
-function TypedItemCreateTypedItemData(asset, { Options, Dialog, ChatTags, ChatSetting, DrawImages }) {
+function TypedItemCreateTypedItemData(asset,
+	{ Options, Dialog, ChatTags, ChatSetting, DrawImages, ChangeWhenLocked, Validate }
+) {
 	Dialog = Dialog || {};
 	const key = `${asset.Group.Name}${asset.Name}`;
 	return TypedItemDataLookup[key] = {
@@ -86,6 +91,8 @@ function TypedItemCreateTypedItemData(asset, { Options, Dialog, ChatTags, ChatSe
 		],
 		chatSetting: ChatSetting || TypedItemChatSetting.TO_ONLY,
 		drawImages: typeof DrawImages === "boolean" ? DrawImages : true,
+		changeWhenLocked: typeof ChangeWhenLocked === "boolean" ? ChangeWhenLocked : true,
+		validate: Validate,
 	};
 }
 
@@ -126,6 +133,28 @@ function TypedItemCreateClickFunction({ options, functionPrefix, drawImages }) {
 }
 
 /**
+ *
+ * @param {TypedItemData} data - The typed item data for the asset
+ */
+function TypedItemCreateValidateFunction({ changeWhenLocked, options, functionPrefix, validate }) {
+	const validateFunctionName = `${functionPrefix}Validate`;
+	window[validateFunctionName] = function (C, item, option, currentOption) {
+		let message = "";
+
+		if (typeof validate === "function") {
+			message = validate(C, item, option, currentOption);
+		}
+
+		const itemLocked = item && item.Property && item.Property.LockedBy;
+		if (!message && !changeWhenLocked && itemLocked && !DialogCanUnlock(C, item)) {
+			message = DialogFindPlayer("CantChangeWhileLocked");
+		}
+
+		return message;
+	};
+}
+
+/**
  * Creates an asset's extended item chatroom message publishing function
  * @param {TypedItemData} data - The typed item data for the asset
  * @returns {void} - Nothing
@@ -135,10 +164,10 @@ function TypedItemCreatePublishFunction(data) {
 	const publishFunctionName = `${functionPrefix}PublishAction`;
 	window[publishFunctionName] = function (C, newOption, previousOption) {
 		let msg = dialog.chatPrefix;
-		if (typeof dialog.chatPrefix === "function") {
+		if (typeof msg === "function") {
 			const previousIndex = options.indexOf(previousOption);
 			const newIndex = options.indexOf(newOption);
-			msg = dialog.chatPrefix({ C, previousOption, newOption, previousIndex, newIndex });
+			msg = msg({ C, previousOption, newOption, previousIndex, newIndex });
 		}
 		if (chatSetting === TypedItemChatSetting.FROM_TO) msg += `${previousOption.Name}To`;
 		msg += newOption.Name;
@@ -230,70 +259,185 @@ function TypedItemMapChatTagToDictionaryEntry(C, asset, tag) {
 }
 
 /**
- * An object defining all of the required configuration for registering a typed item
- * @typedef TypedItemConfig
- * @type {object}
- * @property {ExtendedItemOption[]} Options - The list of extended item options available for the item
- * @property {TypedItemDialogConfig} [Dialog] - The optional text configuration for the item. Custom text keys can be
- * configured within this object
- * @property {CommonChatTags} [ChatTags] - An optional array of chat tags that should be included in the dictionary of
- * the chatroom message when the item's type is changed. Defaults to {@link CommonChatTags.SOURCE_CHAR} and
- * {@link CommonChatTags.DEST_CHAR}
- * @property {TypedItemChatSetting} [ChatSetting] - The chat message setting for the item. This can be provided to allow
- * finer-grained chatroom message keys for the item. Defaults to {@link TypedItemChatSetting.TO_ONLY}
- * @property {boolean} [DrawImages] - A boolean indicating whether or not images should be drawn in this item's extended
- * item menu. Defaults to true
+ * Returns the options configuration array for a typed item
+ * @param {string} groupName - The name of the asset group
+ * @param {string} assetName - The name of the asset
+ * @returns {ExtendedItemOption[]|null} - The options array for the item, or null if no typed item data was found
  */
+function TypedItemGetOptions(groupName, assetName) {
+	const data = TypedItemDataLookup[`${groupName}${assetName}`];
+	return data ? data.options : null;
+}
 
 /**
- * @typedef TypedItemDialogConfig
- * @type {object}
- * @property {string} [Load] - The key for the text that will be displayed at the top of the extended item screen
- * (usually a prompt for the player to select a type). Defaults to "<groupName><assetName>Select"
- * @property {string} [TypePrefix] - A prefix for text keys for the display names of the item's individual types. This
- * will be suffixed with the option name to get the final key (i.e. "<typePrefix><optionName>"). Defaults to
- * "<groupName><assetName>"
- * @property {string | TypedItemChatCallback} [ChatPrefix] - A prefix for text keys for chat messages triggered by the
- * item. Chat message keys
- * will include the name of the new option, and depending on the chat setting, the name of the previous option:
- * - For chat setting FROM_TO: <chatPrefix><oldOptionName>To<newOptionName>
- * - For chat setting TO_ONLY: <chatPrefix><newOptionName>
- * @property {string} [NpcPrefix] - A prefix for text keys for NPC dialog. This will be suffixed with the option name
- * to get the final NPC dialogue key (i.e. "<npcPrefix><optionName>". Defaults to "<groupName><assetName>"
+ * Returns a list of typed item option names available for the given asset, or an empty array if the asset is not typed
+ * @param {string} groupName - The name of the asset group
+ * @param {string} assetName - The name of the asset
+ * @returns {string[]} - The option names available for the asset, or an empty array if the asset is not typed or no
+ * typed item data was found
  */
+function TypedItemGetOptionNames(groupName, assetName) {
+	const options = TypedItemGetOptions(groupName, assetName);
+	return options ? options.map(option => option.Name) : [];
+}
 
 /**
- *
- * An object containing typed item configuration for an asset. Contains all of the necessary information for the item's
- * load, draw & click handlers.
- * @typedef TypedItemData
- * @type {object}
- * @property {Asset} asset - The asset reference
- * @property {ExtendedItemOption[]} options - The list of extended item options available for the item
- * @property {string} key - A key uniquely identifying the asset
- * @property {string} functionPrefix - The common prefix used for all extended item functions associated with the asset
- * @property {object.<string, string>} dialog - A record containing various dialog keys used by the extended item screen
- * @property {string} dialog.load - The dialog key for the item's load text (usually a prompt to select the type)
- * @property {string} dialog.typePrefix - The prefix used for dialog keys representing the display names of the item's
- * types
- * @property {string} dialog.chatPrefix - The prefix used for dialog keys representing the item's chatroom messages
- * when its type is changed
- * @property {string} dialog.npcPrefix - The prefix used for dialog keys representing an NPC's reactions to item type
- * changes
- * @property {CommonChatTags[]} chatTags - An array of the chat message tags that should be included in the item's
- * chatroom messages. Defaults to [{@link CommonChatTags.SOURCE_CHAR}, {@link CommonChatTags.DEST_CHAR}]
- * @property {boolean} [drawImages] - A boolean indicating whether or not images should be drawn in this item's extended
- * item menu. Defaults to true
+ * Returns the named option configuration object for a typed item
+ * @param {string} groupName - The name of the asset group
+ * @param {string} assetName - The name of the asset
+ * @param {string} optionName - The name of the option
+ * @returns {ExtendedItemOption|null} - The named option configuration object, or null if none was found
  */
+function TypedItemGetOption(groupName, assetName, optionName) {
+	const options = TypedItemGetOptions(groupName, assetName);
+	return options ? options.find(option => option.Name === optionName) : null;
+}
 
 /**
- * @callback TypedItemChatCallback
- * @param {object} chatData - An object containing data about the type change that triggered the chat message
- * @param {Character} chatData.C - A reference to the character wearing the item
- * @param {ExtendedItemOption} chatData.previousOption - The previously selected type option
- * @param {ExtendedItemOption} chatData.newOption - The newly selected type option
- * @param {number} chatData.previousIndex - The index of the previously selected type option in the item's options
- * config
- * @param {number} chatData.newIndex - The index of the newly selected type option in the item's options config
- * @returns {string} - The chat prefix that should be used for this type change
+ * Validates a selected option. A typed item may provide a custom validation function. Returning a non-empty string from
+ * the validation function indicates that the new option is not compatible with the character's current state (generally
+ * due to prerequisites or other requirements).
+ * @param {Character} C - The character on whom the item is equipped
+ * @param {Item} item - The item whose options are being validated
+ * @param {ExtendedItemOption|ModularItemOption} option - The new option
+ * @param {ExtendedItemOption|ModularItemOption} previousOption - The previously applied option
+ * @returns {string|undefined} - undefined or an empty string if the validation passes. Otherwise, returns a string
+ * message informing the player of the requirements that are not met.
  */
+function TypedItemValidateOption(C, item, option, previousOption) {
+	if (InventoryBlockedOrLimited(C, item, option.Property.Type)) {
+		return DialogFindPlayer("ExtendedItemNoItemPermission");
+	}
+	const validationFunctionName = `Inventory${item.Asset.Group.Name}${item.Asset.Name}Validate`;
+	let validationMessage = CommonCallFunctionByName(validationFunctionName, C, item, option, previousOption);
+	if (!validationMessage || typeof validationMessage !== "string") {
+		validationMessage = ExtendedItemValidate(C, item, option, previousOption);
+	}
+	return validationMessage;
+}
+
+/**
+ * Sets a typed item's type and properties to the option whose name matches the provided option name parameter.
+ * @param {Character} C - The character on whom the item is equipped
+ * @param {Item|string} itemOrGroupName - The item whose type to set, or the group name for the item
+ * @param {string} optionName - The name of the option to set
+ * @param {boolean} [push] - Whether or not appearance updates should be persisted (only applies if the character is the
+ * player) - defaults to false.
+ * @returns {string|undefined} - undefined or an empty string if the type was set correctly. Otherwise, returns a string
+ * informing the player of the requirements that are not met.
+ */
+function TypedItemSetOptionByName(C, itemOrGroupName, optionName, push = false) {
+	const item = typeof itemOrGroupName === "string" ? InventoryGet(C, itemOrGroupName) : itemOrGroupName;
+
+	if (!item) return;
+
+	const assetName = item.Asset.Name;
+	const groupName = item.Asset.Group.Name;
+	const warningMessage = `Cannot set option for ${groupName}:${assetName} to ${optionName}`;
+
+	if (item.Asset.Archetype !== ExtendedArchetype.TYPED) {
+		const msg = `${warningMessage}: item does not use the typed archetype`;
+		console.warn(msg);
+		return msg;
+	}
+
+	const options = TypedItemGetOptions(groupName, assetName);
+	const option = options.find(o => o.Name === optionName);
+
+	if (!option) {
+		const msg = `${warningMessage}: option "${optionName}" does not exist`;
+		console.warn(msg);
+		return msg;
+	}
+
+	return TypedItemSetOption(C, item, options, option);
+}
+
+/**
+ * Sets a typed item's type and properties to the option provided.
+ * @param {Character} C - The character on whom the item is equipped
+ * @param {Item} item - The item whose type to set
+ * @param {ExtendedItemOption[]} options - The typed item options for the item
+ * @param {ExtendedItemOption} option - The option to set
+ * @param {boolean} [push] - Whether or not appearance updates should be persisted (only applies if the character is the
+ * player) - defaults to false.
+ * @returns {string|undefined} - undefined or an empty string if the type was set correctly. Otherwise, returns a string
+ * informing the player of the requirements that are not met.
+ */
+function TypedItemSetOption(C, item, options, option, push = false) {
+	if (!item || !options || !option) return;
+
+	const previousProperty = item.Property || options[0].Property;
+	const previousOption = TypedItemFindPreviousOption(item, options);
+
+	const requirementMessage = TypedItemValidateOption(C, item, option, previousOption);
+	if (requirementMessage) {
+		return requirementMessage;
+	}
+
+	// Create a new Property object based on the previous one
+	const newProperty = Object.assign({}, previousProperty);
+	// Delete properties added by the previous option
+	for (const key of Object.keys(previousOption.Property)) {
+		delete newProperty[key];
+	}
+	// Clone the new properties and use them to extend the existing properties
+	Object.assign(newProperty, JSON.parse(JSON.stringify(option.Property)));
+
+	// If the item is locked, ensure it has the "Lock" effect
+	if (newProperty.LockedBy && !(newProperty.Effect || []).includes("Lock")) {
+		newProperty.Effect = (newProperty.Effect || []);
+		newProperty.Effect.push("Lock");
+	}
+
+	item.Property = newProperty;
+	CharacterRefresh(C, push);
+}
+
+/**
+ * Finds the currently set option on the given typed item
+ * @param {Item} item - The equipped item
+ * @param {ExtendedItemOption[]} options - The list of available options for the item
+ * @returns {ExtendedItemOption} - The option which is currently applied to the item, or the first item in the options
+ * array if no type is set.
+ */
+function TypedItemFindPreviousOption(item, options) {
+	const previousProperty = item.Property || options[0].Property;
+	const previousType = previousProperty.Type;
+	return options.find(o => o.Property.Type === previousType) || options[0];
+}
+
+/**
+ * Sets a typed item's type to a random option, respecting prerequisites and option validation.
+ * @param {Character} C - The character on whom the item is equipped
+ * @param {Item|string} itemOrGroupName - The item whose type to set, or the group name for the item
+ * @param {boolean} [push] - Whether or not appearance updates should be persisted (only applies if the character is the
+ * player) - defaults to false.
+ * @returns {string|undefined} - undefined or an empty string if the type was set correctly. Otherwise, returns a string
+ * informing the player of the requirements that are not met.
+ */
+function TypedItemSetRandomOption(C, itemOrGroupName, push = false) {
+	const item = typeof itemOrGroupName === "string" ? InventoryGet(C, itemOrGroupName) : itemOrGroupName;
+
+	if (!item || item.Asset.Archetype !== ExtendedArchetype.TYPED) {
+		console.warn("Cannot set random option: item does not exist or does not use the typed archetype");
+		return;
+	}
+
+	/** @type {ExtendedItemOption[]} */
+	const allOptions = TypedItemGetOptions(item.Asset.Group.Name, item.Asset.Name);
+	// Avoid blocked & non-random options
+	const availableOptions = allOptions
+		.filter(option => option.Random !== false)
+		.filter(option => !InventoryBlockedOrLimited(C, item, option.Property.Type));
+
+	/** @type {ExtendedItemOption} */
+	let option;
+	if (availableOptions.length === 0) {
+		// If no options are available, use the null type
+		option = allOptions.find(O => O.Property.Type == null);
+	} else {
+		option = CommonRandomItemFromList(null, availableOptions);
+	}
+	return TypedItemSetOption(C, item, availableOptions, option, push);
+}

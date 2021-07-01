@@ -1,13 +1,32 @@
 "use strict";
 
+/** @type {Map<string, HTMLImageElement>} */
 var GLDrawImageCache = new Map();
 
 var GLDrawCacheLoadedImages = 0;
 var GLDrawCacheTotalImages = 0;
 
+/** @type {"webgl2"|"webgl"|"No WebGL"} */
 var GLVersion;
 
 var GLDrawCanvas;
+
+/**
+ * How many seconds to wait before forcefully resetting the canvas after a
+ * context loss
+ */
+const GLDrawContextResetSeconds = 10;
+/**
+ * The cooldown in seconds after resetting the canvas. If another context loss
+ * happens in this cooldown, we'll revert to canvas2d rendering
+ */
+const GLDrawRevertToDraw2DSeconds = 50;
+
+let GLDrawContextLostTimeout;
+let GLDrawRecoveryMode = false;
+let GLDrawCrashTimeout;
+
+let GLDrawBuildCanvasBackup;
 
 var GLDrawAlphaThreshold = 0.01;
 var GLDrawHalfAlphaLow = 0.8 / 256.0;
@@ -24,25 +43,109 @@ function GLDrawLoad() {
 	GLDrawCanvas.width = 1000;
 	GLDrawCanvas.height = CanvasDrawHeight;
 	GLVersion = "webgl2";
-	var gl = GLDrawCanvas.getContext(GLVersion);
-	if (!gl) { GLVersion = "webgl"; gl = GLDrawCanvas.getContext(GLVersion); }
+	var gl = GLDrawCanvas.getContext(GLVersion, GLDrawGetOptions());
+	if (!gl) { GLVersion = "webgl"; gl = GLDrawCanvas.getContext(GLVersion, GLDrawGetOptions()); }
 	if (!gl) { GLVersion = "No WebGL"; GLDrawCanvas.remove(); GLDrawCanvas = null; return; }
 
 	GLDrawCanvas = GLDrawInitCharacterCanvas(GLDrawCanvas);
 
+	if (!GLDrawBuildCanvasBackup) {
+		// Keep a backup of the original CharacterAppearanceBuildCanvas function in case we need to revert
+		GLDrawBuildCanvasBackup = CharacterAppearanceBuildCanvas;
+	}
 	CharacterAppearanceBuildCanvas = GLDrawAppearanceBuild;
 
 	// Attach context listeners
-	GLDrawCanvas.addEventListener("webglcontextlost", function (event) {
-		event.preventDefault();
-		console.log("WebGL Drawing disabled: Context Lost. If the context does not restore itself, refresh your page.");
-	}, false);
-	GLDrawCanvas.addEventListener("webglcontextrestored", function () {
-		GLDrawLoad();
-		console.log("WebGL: Context restored.");
-	}, false);
+	GLDrawCanvas.addEventListener("webglcontextlost", GLDrawOnContextLost, false);
+	GLDrawCanvas.addEventListener("webglcontextrestored", GLDrawOnContextRestored, false);
+}
 
-	//console.log("WebGL Drawing enabled: '" + GLVersion + "'");
+/**
+ * Gets the graphical options saved in the player's local storage.
+ * @returns {WebGLContextAttributes} - WebG context attributes based on saved settings
+ */
+function GLDrawGetOptions() {
+	let antialias = true;
+	let powerPreference = "default";
+	
+	if (localStorage.getItem("GLDraw-antialiasOff")) antialias = false;
+	let savedPowerMode = localStorage.getItem("GLDraw-powerPreference");
+	if (savedPowerMode && (savedPowerMode == "high-performance" || savedPowerMode == "low-power")) {
+		powerPreference = savedPowerMode;
+	}
+	
+	return { antialias, powerPreference};
+}
+
+/**
+ * Handler for WebGL context lost events
+ * @param {WebGLContextEvent} event
+ * @returns {void} - Nothing
+ */
+function GLDrawOnContextLost(event) {
+	event.preventDefault();
+	console.log("WebGL Drawing disabled: Context Lost. If the context does not restore itself, refresh your page.");
+
+	if (GLDrawRecoveryMode) {
+		// If the context has been lost again whilst in crash cooldown, revert to canvas2d drawing
+		return GLDrawRevertToCanvas2D();
+	}
+
+	GLDrawContextLostTimeout = setTimeout(() => {
+		// If the context has not been automatically restored after
+		console.log(`Context not restored after ${GLDrawContextResetSeconds} seconds... resetting canvas.`);
+		GLDrawResetCanvas();
+
+		// After forcefully resetting the canvas, we're in crash cooldown mode
+		GLDrawRecoveryMode = true;
+		GLDrawCrashTimeout = setTimeout(() => GLDrawRecoveryMode = false, GLDrawRevertToDraw2DSeconds * 1000);
+	}, GLDrawContextResetSeconds * 1000);
+}
+
+/**
+ * Restores the original CharacterAppearanceBuildCanvas function, and cleans up any GLDraw resources.
+ * @returns {void} - Nothing
+ */
+function GLDrawRevertToCanvas2D() {
+	const seconds = GLDrawContextResetSeconds + GLDrawRevertToDraw2DSeconds;
+	console.log(`WebGL context lost twice within ${seconds} seconds - reverting to canvas2D rendering`);
+	clearTimeout(GLDrawCrashTimeout);
+	GLDrawCanvas.remove();
+	GLDrawImageCache.clear();
+	CharacterAppearanceBuildCanvas = GLDrawBuildCanvasBackup;
+	GLDrawRebuildCharacters();
+}
+
+/**
+ * Handler for WebGL context restored events
+ * @returns {void} - Nothing
+ */
+function GLDrawOnContextRestored() {
+	console.log("WebGL: Context restored.");
+	clearTimeout(GLDrawContextLostTimeout);
+	GLDrawLoad();
+	GLDrawRebuildCharacters();
+}
+
+/**
+ * Removes the current GLDraw canvas, clears the image cache, and reloads a fresh canvas.
+ * @returns {void} - Nothing
+ */
+function GLDrawResetCanvas() {
+	GLDrawCanvas.remove();
+	GLDrawImageCache.clear();
+	GLDrawLoad();
+	GLDrawRebuildCharacters();
+}
+
+/**
+ * Rebuilds the canvas for any characters that are currently on screen.
+ * @returns {void} - Nothing
+ */
+function GLDrawRebuildCharacters() {
+	for (const C of DrawLastCharacters) {
+		CharacterAppearanceBuildCanvas(C);
+	}
 }
 
 /**
@@ -193,7 +296,7 @@ var GLDrawFragmentShaderSourceHalfAlpha = `
  * Creates a shader for the current WebGL context from a given source
  * @param {WebGL2RenderingContext} gl - WebGL context
  * @param {string} source - Source of the shader to create
- * @param {WebGLShader} type - The type of the shader to create
+ * @param {GLenum} type - The type of the shader to create
  * @returns {WebGLShader} - The created WebGL shader
  */
 function GLDrawCreateShader(gl, source, type) {
@@ -243,7 +346,7 @@ function GLDrawCreateProgram(gl, vertexShader, fragmentShader) {
 /**
  * Draws an image from a given url to a WebGLRenderingContext, used when the character is blinking
  * @param {string} url - URL of the image to render
- * @param {WebGLRenderingContext} gl - WebGL context
+ * @param {WebGL2RenderingContext} gl - WebGL context
  * @param {number} dstX - Position of the image on the X axis
  * @param {number} dstY - Position of the image on the Y axis
  * @param {string} color - Color of the image to draw
@@ -256,14 +359,15 @@ function GLDrawImageBlink(url, gl, dstX, dstY, color, fullAlpha, alphaMasks, opa
 /**
  * Draws an image from a given url to a WebGLRenderingContext
  * @param {string} url - URL of the image to render
- * @param {WebGLRenderingContext} gl - WebGL context
+ * @param {WebGL2RenderingContext} gl - WebGL context
  * @param {number} dstX - Position of the image on the X axis
  * @param {number} dstY - Position of the image on the Y axis
  * @param {number} offsetX - Additional offset to add to the X axis (for blinking)
  * @param {string} color - Color of the image to draw
  * @param {boolean} fullAlpha - Whether or not the full alpha should be rendered
  * @param {number[][]} alphaMasks - A list of alpha masks to apply to the asset
- * @param {number} opacity - The opacity at which to draw the image
+ * @param {number} [opacity=1] - The opacity at which to draw the image
+ * @param {boolean} [rotate=false] - If the image should be rotated by 180 degress
  * @returns {void} - Nothing
  */
 function GLDrawImage(url, gl, dstX, dstY, offsetX, color, fullAlpha, alphaMasks, opacity, rotate = false) {
@@ -309,17 +413,17 @@ function GLDrawImage(url, gl, dstX, dstY, offsetX, color, fullAlpha, alphaMasks,
 
 /**
  * Draws a canvas on the WebGL canvas for the blinking effect
- * @param {WebGLRenderingContext} gl - WebGL context
- * @param {ImageData} Img - Canvas to get the data of
+ * @param {WebGL2RenderingContext} gl - WebGL context
+ * @param {HTMLImageElement | HTMLCanvasElement} Img - Canvas to get the data of
  * @param {number} X - Position of the image on the X axis
  * @param {number} Y - Position of the image on the Y axis
  * @param {number[][]} alphaMasks - A list of alpha masks to apply to the asset
  */
-function GLDraw2DCanvasBlink(gl, Img, X, Y, alphaMasks) { GLDraw2DCanvas(gl, Img, X + 500, Y, 500,  alphaMasks); }
+function GLDraw2DCanvasBlink(gl, Img, X, Y, alphaMasks) { GLDraw2DCanvas(gl, Img, X + 500, Y, alphaMasks); }
 /**
  * Draws a canvas on the WebGL canvas
- * @param {WebGLRenderingContext} gl - WebGL context
- * @param {ImageData} Img - Canvas to get the data of
+ * @param {WebGL2RenderingContext} gl - WebGL context
+ * @param {HTMLImageElement | HTMLCanvasElement} Img - Canvas to get the data of
  * @param {number} X - Position of the image on the X axis
  * @param {number} Y - Position of the image on the Y axis
  * @param {number[][]} alphaMasks - A list of alpha masks to apply to the asset
@@ -334,8 +438,8 @@ function GLDraw2DCanvas(gl, Img, X, Y, alphaMasks) {
 /**
  * Sets texture info from image data
  * @param {WebGLRenderingContext} gl - WebGL context
- * @param {ImageData} Img - Image to get the data of
- * @param {WebGLTexture} textureInfo - Texture information
+ * @param {HTMLImageElement} Img - Image to get the data of
+ * @param {{ width: number; height: number; texture: WebGLTexture; }} textureInfo - Texture information
  * @returns {void} - Nothing
  */
 function GLDrawBingImageToTextureInfo(gl, Img, textureInfo) {
@@ -347,9 +451,9 @@ function GLDrawBingImageToTextureInfo(gl, Img, textureInfo) {
 
 /**
  * Loads image texture data
- * @param {WebGLRenderingContext} gl - WebGL context
+ * @param {WebGL2RenderingContext} gl - WebGL context
  * @param {string} url - URL of the image
- * @returns {WebGLTexture} - The texture info of a given image
+ * @returns {{ width: number; height: number; texture: WebGLTexture; }} - The texture info of a given image
  */
 function GLDrawLoadImage(gl, url) {
 
@@ -359,6 +463,7 @@ function GLDrawLoadImage(gl, url) {
 		var tex = gl.createTexture();
 
 		gl.bindTexture(gl.TEXTURE_2D, tex);
+		/** @type { { width: number; height: number; texture: WebGLTexture; } } */
 		textureInfo = { width: 1, height: 1, texture: tex, };
 		gl.textureCache.set(url, textureInfo);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -400,7 +505,7 @@ function GLDrawLoadImage(gl, url) {
 
 /**
  * Loads alpha mask data
- * @param {WebGLRenderingContext} gl - The WebGL context
+ * @param {WebGL2RenderingContext} gl - The WebGL context
  * @param {number} texWidth - The width of the texture to mask
  * @param {number} texHeight - The height of the texture to mask
  * @param {number} offsetX - The X offset at which the texture is to be drawn on the target canvas
@@ -465,7 +570,7 @@ function GLDrawClearRect(gl, x, y, width, height) {
  * Converts a hex color to a RGBA color
  * @param {string} color - Hex color code to convert to RGBA
  * @param {number} alpha - The alpha value to use for the resulting RGBA
- * @return {string} - Converted color code
+ * @return {number[]} - Converted color code
  */
 function GLDrawHexToRGBA(color, alpha = 1) {
 	var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;

@@ -5,8 +5,9 @@ var PandoraPreviousRoom = null;
 var PandoraRoom = [];
 var PandoraDirectionList = ["South", "North", "East", "West"];
 var PandoraDirectionListFrom = ["North", "South", "West", "East"];
-var PandoraSeachMode = false;
-var PandoraSeachSquare = null;
+var PandoraMode = "";
+var PandoraModeTimer = 0;
+var PandoraModeAppearance = null;
 var PandoraMessage = null;
 var PandoraParty = [];
 var PandoraFightCharacter = null;
@@ -69,11 +70,28 @@ function PandoraRun() {
 	if ((PandoraRoom.length == 0) || (PandoraCurrentRoom == null)) return;
 	PandoraBackground = "Pandora/" + PandoraCurrentRoom.Floor + "/" + PandoraCurrentRoom.Background;
 
-	// In search mode
-	if (PandoraSeachMode) {
+	// The search square are drawn even out of search mode
+	if (PandoraCurrentRoom.SearchSquare != null)
+		for (let S = 0; S < PandoraCurrentRoom.SearchSquare.length; S++)
+			DrawRect(PandoraCurrentRoom.SearchSquare[S].X, PandoraCurrentRoom.SearchSquare[S].Y, PandoraCurrentRoom.SearchSquare[S].W, PandoraCurrentRoom.SearchSquare[S].H, "#00FFFF7F");
+	
+	// In search mode, we draw all previous searches done in that area
+	if (PandoraMode == "Search") {
 		DrawButton(1885, 885, 90, 90, "", "White", "Icons/Search.png", TextGet("SearchStop"));
-		let Radius = InfiltrationPerksActive("Investigation") ? 150 : 100;
-		if (PandoraSeachSquare != null) DrawEmptyRect(PandoraSeachSquare.X - Radius, PandoraSeachSquare.Y - Radius, Radius * 2, Radius * 2, "Cyan", 3);
+		return;
+	}
+
+	// In rest mode, the timer will tick slowly and heal the player for 1 willpower
+	if (PandoraMode == "Rest") {
+		DrawButton(1885, 25, 90, 90, "", "White", "Icons/Rest.png", TextGet("RestStop"));
+		DrawProgressBar(1785, 954, 205, 36, Math.round(PandoraWillpower / PandoraMaxWillpower * 100));
+		DrawText(PandoraWillpower.toString(), 1888, 973, "black", "white");
+		DrawCharacter(Player, 750, 0, 1);
+		if (PandoraModeTimer < CommonTime()) {			
+			PandoraWillpower = PandoraWillpower + 1;
+			if (PandoraWillpower > PandoraMaxWillpower) PandoraWillpower = PandoraMaxWillpower;
+			PandoraModeTimer = CommonTime() + ((InfiltrationPerksActive("Recovery")) ? 10000 : 12000);
+		}
 		return;
 	}
 
@@ -100,14 +118,47 @@ function PandoraRun() {
 
 	// If we must draw a message in the middle of the screen
 	if ((PandoraMessage != null) && (PandoraMessage.Timer != null) && (PandoraMessage.Text != null) && (PandoraMessage.Timer >= CommonTime())) {
-		DrawRect(500, 465, 1000, 70, "black");
-		DrawRect(502, 467, 996, 66, "white");
-		DrawTextWrap(PandoraMessage.Text, 500, 465, 1000, 70, "black");
+		DrawRect(450, 465, 1100, 70, "black");
+		DrawRect(452, 467, 1096, 66, "white");
+		DrawTextWrap(PandoraMessage.Text, 450, 465, 1100, 70, "black");
 	}
 
 	// Draw the willpower / max
 	DrawProgressBar(1785, 954, 205, 36, Math.round(PandoraWillpower / PandoraMaxWillpower * 100));
 	DrawText(PandoraWillpower.toString(), 1888, 973, "black", "white");
+
+}
+
+/**
+ * Enters a new mode for the Pandora screen, such as rest or search mode
+ * @returns {void} - Nothing
+ */
+function PandoraSetMode(NewMode) {
+	
+	// Exit from a previous mode if needed
+	if ((PandoraMode == "Rest") && (NewMode == "") && (PandoraModeAppearance != null)) {
+		Player.Appearance = PandoraModeAppearance.slice(0);
+		PandoraModeAppearance = null;
+		CharacterRefresh(Player, true);
+	}
+
+	// Enters the need mode
+	PandoraMode = NewMode;
+
+	// In rest, the player switch to a towel and heals overtime
+	if (NewMode == "Rest") {
+		PandoraModeAppearance = Player.Appearance.slice(0);
+		CharacterNaked(Player);
+		InventoryWear(Player, "BodyTowel1", "Cloth");
+		InventoryWear(Player, "HeadTowel1", "Hat");
+		PandoraModeTimer = CommonTime() + ((InfiltrationPerksActive("Recovery")) ? 10000 : 12000);
+	}
+
+	// Cannot enter search mode if the item is already found
+	if ((NewMode == "Search") && (InfiltrationTarget.Found != null) && (InfiltrationTarget.Found == true)) {
+		PandoraMsgBox(TextGet("AlreadyFound").replace("TargetName", InfiltrationTarget.Name));
+		PandoraMode = "";
+	}
 
 }
 
@@ -125,17 +176,24 @@ function PandoraClick() {
 		return;
 
 	// In search mode, we can click anywhere on the screen
-	if (PandoraSeachMode) {
+	if (PandoraMode == "Search") {
 		if (MouseIn(0, 0, 1850, 1000)) {
-			PandoraSeachSquare = { X: MouseX, Y: MouseY };
-			let Radius = InfiltrationPerksActive("Investigation") ? 150 : 100;
+			if (PandoraCurrentRoom.SearchSquare == null) PandoraCurrentRoom.SearchSquare = [];
+			let Radius = InfiltrationPerksActive("Investigation") ? 250 : 175;
+			PandoraCurrentRoom.SearchSquare.push({ X: MouseX - Radius, Y: MouseY - Radius, W: Radius * 2, H: Radius * 2 });
 			if ((PandoraCurrentRoom.ItemX != null) && (PandoraCurrentRoom.ItemY != null) && MouseIn(PandoraCurrentRoom.ItemX - Radius, PandoraCurrentRoom.ItemY - Radius, Radius * 2, Radius * 2)) {
 				InfiltrationTarget.Found = true;
-				PandoraSeachMode = false;
+				PandoraSetMode("");
 				PandoraMsgBox(TextGet("FoundItem").replace("TargetName", InfiltrationTarget.Name));
 			}
 		}
-		if (MouseIn(1885, 885, 90, 90)) PandoraSeachMode = false;
+		if (MouseIn(1885, 885, 90, 90)) PandoraSetMode("");
+		return;
+	}
+
+	// In rest mode, the player can exit it and stop healing
+	if (PandoraMode == "Rest") {
+		if (MouseIn(1885, 25, 90, 90)) PandoraSetMode("");
 		return;
 	}
 
@@ -148,7 +206,7 @@ function PandoraClick() {
 		if ((PandoraCurrentRoom.Character[C].AllowMove != null) && (PandoraCurrentRoom.Character[C].AllowMove == false)) AllowMove = false;
 	}
 
-	// If we allow moving, we can switch room
+	// If we allow moving, we can switch room, rooms that start with "Rest" or "Search" have special modes
 	if (AllowMove) {
 		for (let C = 0; C < PandoraParty.length; C++)
 			if (MouseIn(Pos + ((C + 1) * 460), 0, 500, 1000))
@@ -156,13 +214,7 @@ function PandoraClick() {
 		for (let P = 0; P < PandoraCurrentRoom.Path.length; P++)
 			if (MouseIn(1900, 25 + P * 115, 90, 90)) {
 				if (PandoraCurrentRoom.Path[P].Floor == "Exit") return CommonSetScreen("Room", "Infiltration");
-				if (PandoraCurrentRoom.Path[P].Floor == "Search") {
-					if ((InfiltrationTarget.Found == null) || (InfiltrationTarget.Found == false)) {
-						PandoraSeachSquare = null;
-						PandoraSeachMode = true;
-					} else PandoraMsgBox(TextGet("AlreadyFound").replace("TargetName", InfiltrationTarget.Name));
-					return;
-				}
+				if ((PandoraCurrentRoom.Path[P].Floor == "Search") || (PandoraCurrentRoom.Path[P].Floor == "Rest")) return PandoraSetMode(PandoraCurrentRoom.Path[P].Floor);
 				return PandoraEnterRoom(PandoraCurrentRoom.Path[P]);
 			}
 		if (MouseIn(1842, 620, 90, 90) && (PandoraDirectionAvailable("North"))) return PandoraEnterRoom(PandoraCurrentRoom.PathMap[PandoraCurrentRoom.DirectionMap.indexOf("North")], "North");
@@ -240,7 +292,7 @@ function PandoraDress(C, Type) {
 		else InventoryGet(C, "Panties").Color = "#222222";
 		if (InventoryGet(C, "Shoes") == null) InventoryWear(C, "Shoes1", "Shoes", "#222222");
 		else InventoryGet(C, "Shoes").Color = "#222222";
-		InventoryWear(C, "MaidCollar", "ItemNeck", "#804040");
+		if (C.ID != 0) InventoryWear(C, "MaidCollar", "ItemNeck", "#804040");
 		CharacterRefresh(C, false);
 		return;
 	}
@@ -262,7 +314,9 @@ function PandoraDress(C, Type) {
 	if (Type == "Slave") {
 		CharacterNaked(C);
 		InventoryWear(C, "StrictPostureCollar", "ItemNeck", "#FFD700");
+		InventoryLock(C, "ItemNeck", "PandoraPadlock", -1);
 		InventoryWear(C, "MetalChastityBelt", "ItemPelvis", "#FFD700");
+		InventoryLock(C, "ItemPelvis", "PandoraPadlock", -1);
 		CharacterRefresh(C, false);
 		return;
 	}
@@ -308,8 +362,8 @@ function PandoraEnterRoom(Room, Direction) {
 			return;
 		}
 
-	// 5% odds of spawning a new random NPC in the room
-	if ((PandoraCurrentRoom.Background.indexOf("Entrance") < 0) && (PandoraCurrentRoom.Character.length == 0) && (Math.random() > 0.95)) {
+	// 4% odds of spawning a new random NPC in the room
+	if ((PandoraCurrentRoom.Background.indexOf("Entrance") < 0) && (PandoraCurrentRoom.Character.length == 0) && (Math.random() > 0.96)) {
 		let Type = CommonRandomItemFromList("", PandoraRandomNPCList);
 		let Char = PandoraGenerateNPC("Random", Type, "RANDOM", (Type === "Slave"));
 		Char.Type = Type;
@@ -370,10 +424,10 @@ function PandoraEnterRoom(Room, Direction) {
  * @param {number} RoomLevel - The room level, the higher it goes, the higher the chances it will be a dead-end
  * @returns {void} - Nothing
  */
-function PandoraGenerateRoom(EntryRoom, DirectionFrom, RoomLevel) {
+function PandoraGenerateRoom(EntryRoom, DirectionFrom, RoomLevel, MaxRoom) {
 
-	// Over 100, the dungeon layout is always invalid
-	if (PandoraRoom.length >= 100) return;
+	// Over the max number of rooms, the dungeon layout is always invalid
+	if (PandoraRoom.length >= MaxRoom) return;
 
 	// The higher the room level, the less paths there will be
 	let PathCount = 0;
@@ -400,12 +454,13 @@ function PandoraGenerateRoom(EntryRoom, DirectionFrom, RoomLevel) {
 		Continue = false;
 		while (!Continue) {
 			RoomBack = "Cell";
-			let DeadEndOdds = (RoomLevel - InfiltrationDifficulty) * 0.2;
+			let DeadEndOdds = (RoomLevel - InfiltrationDifficulty) * 0.25;
 			if (RoomLevel <= 2) DeadEndOdds = 0;
 			let TunnelOdds = 0.25 + (RoomLevel * 0.1);
 			if (TunnelOdds > 0.75) TunnelOdds = 0.75;
 			if (Math.random() >= DeadEndOdds) RoomBack = (Math.random() >= TunnelOdds) ? "Fork" : "Tunnel";
-			RoomBack = RoomBack + Math.floor(Math.random() * 7);
+			if ((RoomBack == "Cell") && (Math.random() >= 0.9)) RoomBack = "Rest0";
+			else RoomBack = RoomBack + Math.floor(Math.random() * 7);
 			Continue = (RoomBack !== EntryRoom.Background);
 			if (Continue)
 				for (let R = 0; R < PandoraRoom.length; R++)
@@ -430,14 +485,18 @@ function PandoraGenerateRoom(EntryRoom, DirectionFrom, RoomLevel) {
 		EntryRoom.PathMap.push(Room);
 		EntryRoom.DirectionMap.push(PandoraDirectionListFrom[PathNum]);
 
-		// Creates sub-rooms if it's not a dead end room
+		// Creates sub-rooms if it's not a dead end room, generate the search and rest icon if needed
 		if (RoomBack.indexOf("Cell") == 0) {
 			if ((InfiltrationMission == "Retrieve") || (InfiltrationMission == "Steal")) {
 				let SearchRoom = { Floor: "Search" };
 				Room.Path.push(SearchRoom);
 				Room.Direction.push("Search");
 			}
-		} else PandoraGenerateRoom(Room, PandoraDirectionListFrom[PathNum], RoomLevel + 1);
+		} else if (RoomBack.indexOf("Rest") == 0) {
+			let RestRoom = { Floor: "Rest" };
+			Room.Path.push(RestRoom);
+			Room.Direction.push("Rest");
+		} else PandoraGenerateRoom(Room, PandoraDirectionListFrom[PathNum], RoomLevel + 1, MaxRoom);
 
 	}
 
@@ -451,7 +510,7 @@ function PandoraGenerateRoom(EntryRoom, DirectionFrom, RoomLevel) {
  * @param {string} DirectionTo - The opposite direction
  * @returns {void} - Nothing
  */
-function PandoraGenerateFloor(FloorName, EntryRoom, DirectionFrom, DirectionTo) {
+function PandoraGenerateFloor(FloorName, EntryRoom, DirectionFrom, DirectionTo, MaxRoom) {
 
 	// Always create the same entrance room
 	let Room = {};
@@ -469,7 +528,7 @@ function PandoraGenerateFloor(FloorName, EntryRoom, DirectionFrom, DirectionTo) 
 	EntryRoom.Direction.push(DirectionTo);
 
 	// Starts the room generation
-	PandoraGenerateRoom(Room, DirectionFrom, 1);
+	PandoraGenerateRoom(Room, DirectionFrom, 1, MaxRoom);
 
 }
 
@@ -495,12 +554,12 @@ function PandoraBuildMainHall() {
 	Room.DirectionMap = [];
 
 	// Generates the floors and sets the starting room, there's a min-max number of rooms based on difficulty
-	let MinRoom = 15;
-	let MaxRoom = 24;
-	if (InfiltrationDifficulty == 1) { MinRoom = 25; MaxRoom = 39; }
-	if (InfiltrationDifficulty == 2) { MinRoom = 40; MaxRoom = 54; }
-	if (InfiltrationDifficulty == 3) { MinRoom = 55; MaxRoom = 74; }
-	if (InfiltrationDifficulty == 4) { MinRoom = 75; MaxRoom = 99; }
+	let MinRoom = 25;
+	let MaxRoom = 39;
+	if (InfiltrationDifficulty == 1) { MinRoom = 35; MaxRoom = 59; }
+	if (InfiltrationDifficulty == 2) { MinRoom = 50; MaxRoom = 79; }
+	if (InfiltrationDifficulty == 3) { MinRoom = 70; MaxRoom = 109; }
+	if (InfiltrationDifficulty == 4) { MinRoom = 100; MaxRoom = 149; }
 	PandoraRoom = [];
 	while ((PandoraRoom.length < MinRoom) || (PandoraRoom.length > MaxRoom)) {
 		PandoraRoom = [];
@@ -509,7 +568,8 @@ function PandoraBuildMainHall() {
 		Room.Direction = [];
 		Room.Direction.push("Exit");
 		PandoraRoom.push(Room);
-		PandoraGenerateFloor("Underground", Room, "StairsUp", "StairsDown");
+		PandoraGenerateFloor("Second", Room, "StairsDown", "StairsUp", MaxRoom);
+		PandoraGenerateFloor("Underground", Room, "StairsUp", "StairsDown", MaxRoom);
 	}
 	PandoraCurrentRoom = Room;
 	PandoraPreviousRoom = null;
@@ -749,7 +809,7 @@ function PandoraRecruitBoost() {
  * Starts the player punishment process and jumps to the punishment Dominatrix
  * @returns {void} - Nothing
  */
-function PandoraPunishmentIntro() {
+function PandoraPunishmentIntro(FromKidnapper) {
 	let IntroText;
 	if (SkillGetLevel(Player, "Infiltration") >= 8) IntroText = DialogFind(CurrentCharacter, "Punishment8");
 	else if (SkillGetLevel(Player, "Infiltration") >= 5) IntroText = DialogFind(CurrentCharacter, "Punishment5");
@@ -760,6 +820,7 @@ function PandoraPunishmentIntro() {
 	if (SkillGetLevel(Player, "Infiltration") >= 2) Dominatrix.Stage = "20";
 	if (SkillGetLevel(Player, "Infiltration") >= 5) Dominatrix.Stage = "50";
 	if (SkillGetLevel(Player, "Infiltration") >= 8) Dominatrix.Stage = "80";
+	if ((FromKidnapper != null) && FromKidnapper) Dominatrix.Stage = "200";
 	CharacterSetCurrent(Dominatrix);
 	CurrentCharacter.CurrentDialog = IntroText;
 	InfiltrationTarget.Fail = true;

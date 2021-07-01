@@ -78,6 +78,7 @@ function AssetAdd(NewAsset, ExtendedConfig) {
 		Hide: (NewAsset.Hide == null) ? AssetCurrentGroup.Hide : NewAsset.Hide,
 		HideItem: NewAsset.HideItem,
 		HideItemExclude: NewAsset.HideItemExclude || [],
+		HideItemAttribute: NewAsset.HideItemAttribute || [],
 		Require: NewAsset.Require,
 		SetPose: (NewAsset.SetPose == null) ? AssetCurrentGroup.SetPose : NewAsset.SetPose,
 		AllowActivePose: (NewAsset.AllowActivePose == null) ? AssetCurrentGroup.AllowActivePose : NewAsset.AllowActivePose,
@@ -104,6 +105,7 @@ function AssetAdd(NewAsset, ExtendedConfig) {
 		AlwaysExtend: (NewAsset.AlwaysExtend == null) ? false : NewAsset.AlwaysExtend,
 		AlwaysInteract: (NewAsset.AlwaysInteract == null) ? false : NewAsset.AlwaysInteract,
 		AllowLock: (NewAsset.AllowLock == null) ? false : NewAsset.AllowLock,
+		LayerVisibility: (NewAsset.LayerVisibility == null) ? false : NewAsset.LayerVisibility,
 		IsLock: (NewAsset.IsLock == null) ? false : NewAsset.IsLock,
 		PickDifficulty: (NewAsset.PickDifficulty == null) ? 0 : NewAsset.PickDifficulty,
 		OwnerOnly: (NewAsset.OwnerOnly == null) ? false : NewAsset.OwnerOnly,
@@ -155,7 +157,8 @@ function AssetAdd(NewAsset, ExtendedConfig) {
 		ColorableLayerCount: 0,
 		FuturisticRecolor: typeof NewAsset.FuturisticRecolor === 'boolean' ? NewAsset.FuturisticRecolor : false,
 		FuturisticRecolorDisplay: typeof NewAsset.FuturisticRecolorDisplay === 'boolean' ? NewAsset.FuturisticRecolorDisplay : false,
-	}, AssetParsePoseProperties(NewAsset, [...AssetCurrentGroup.AllowPose]));
+		Attribute: NewAsset.Attribute || [],
+	}, AssetParsePoseProperties(NewAsset, AssetCurrentGroup.AllowPose.slice()));
 
 	// Ensure opacity value is valid
 	if (A.MinOpacity > A.Opacity) A.MinOpacity = A.Opacity;
@@ -189,10 +192,10 @@ function AssetBuildExtended(A, ExtendedConfig) {
 	if (AssetConfig) {
 		switch (AssetConfig.Archetype) {
 			case ExtendedArchetype.MODULAR:
-				ModularItemRegister(A, AssetConfig.Config);
+				ModularItemRegister(A, /** @type {ModularItemConfig} */ (AssetConfig.Config));
 				break;
 			case ExtendedArchetype.TYPED:
-				TypedItemRegister(A, AssetConfig.Config);
+				TypedItemRegister(A, /** @type {TypedItemConfig} */ (AssetConfig.Config));
 				break;
 		}
 		A.Archetype = AssetConfig.Archetype;
@@ -242,6 +245,7 @@ function AssetMapLayer(Layer, AssetDefinition, A, I) {
 		ColorGroup: Layer.ColorGroup,
 		HideColoring: typeof Layer.HideColoring === "boolean" ? Layer.HideColoring : false,
 		AllowTypes: Array.isArray(Layer.AllowTypes) ? Layer.AllowTypes : null,
+		Visibility:  typeof Layer.Visibility === "string" ? Layer.Visibility : null,
 		HasType: typeof Layer.HasType === "boolean" ? Layer.HasType : A.HasType,
 		ParentGroupName: Layer.ParentGroup,
 		Priority: Layer.Priority || AssetDefinition.Priority || AssetCurrentGroup.DrawingPriority,
@@ -261,7 +265,7 @@ function AssetMapLayer(Layer, AssetDefinition, A, I) {
 		ColorIndex: 0
 	}, AssetParsePoseProperties(
 		Layer,
-		Array.isArray(AssetDefinition.AllowPose) ? [...AssetDefinition.AllowPose] : null)
+		Array.isArray(AssetDefinition.AllowPose) ? AssetDefinition.AllowPose.slice() : null)
 	);
 	if (L.MinOpacity > L.Opacity) L.MinOpacity = L.Opacity;
 	if (L.MaxOpacity < L.Opacity) L.MaxOpacity = L.Opacity;
@@ -393,7 +397,10 @@ function AssetBuildDescription(Family, CSV) {
 
 }
 
-// Loads the description of the assets in a specific language
+/**
+ * Loads the description of the assets in a specific language
+ * @param {string} Family The asset family to load the description for
+ */
 function AssetLoadDescription(Family) {
 
 	// Finds the full path of the CSV file to use cache
@@ -447,7 +454,13 @@ function AssetLoadAll() {
 	Pose = PoseFemale3DCG;
 }
 
-// Gets a specific asset by family/group/name
+/**
+ * Gets a specific asset by family/group/name
+ * @param {string} Family - The family to search in
+ * @param {string} Group - Name of the group of the searched asset
+ * @param {string} Name - Name of the searched asset
+ * @returns {Asset|null}
+ */
 function AssetGet(Family, Group, Name) {
 	for (let A = 0; A < Asset.length; A++)
 		if ((Asset[A].Name == Name) && (Asset[A].Group.Name == Group) && (Asset[A].Group.Family == Family))
@@ -455,7 +468,12 @@ function AssetGet(Family, Group, Name) {
 	return null;
 }
 
-// Gets an activity asset by family and name
+/**
+ * Gets an activity asset by family and name
+ * @param {string} Family - The family to search in
+ * @param {string} Name - Name of activity to search for
+ * @returns {Activity|null}
+ */
 function AssetGetActivity(Family, Name) {
 	if (Family == "Female3DCG")
 		for (let A = 0; A < ActivityFemale3DCG.length; A++)

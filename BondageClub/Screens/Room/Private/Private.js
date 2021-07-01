@@ -1,6 +1,7 @@
 "use strict";
 var PrivateBackground = "Private";
 var PrivateVendor = null;
+/** @type {Character[]} */
 var PrivateCharacter = [];
 var PrivateCharacterOffset = 0;
 var PrivateCharacterTypeList = ["NPC_Private_VisitorShy", "NPC_Private_VisitorHorny", "NPC_Private_VisitorTough"];
@@ -439,6 +440,7 @@ function PrivateRun() {
 				DrawButton(1050, 532, 250, 64, TextGet("OrgasmSurrender"), "White");
 			}
 			if (Player.ArousalSettings.OrgasmStage == 1) DrawButton(ActivityOrgasmGameButtonX + 500, ActivityOrgasmGameButtonY, 250, 64, ActivityOrgasmResistLabel, "White");
+			if (ActivityOrgasmRuined) ActivityOrgasmControl();
 			if (Player.ArousalSettings.OrgasmStage == 2) DrawText(TextGet("OrgasmRecovering"), 1000, 500, "White", "Black");
 			ActivityOrgasmProgressBar(550, 970);
 		} else if ((Player.ArousalSettings.Progress != null) && (Player.ArousalSettings.Progress >= 91) && (Player.ArousalSettings.Progress <= 99)) DrawRect(0, 0, 2000, 1000, "#FFB0B040");
@@ -607,7 +609,7 @@ function PrivateClick() {
 		if (index < 0) index = 0;
 		BackgroundSelectionMake(backgrounds, index, Name => {
 			Player.VisualSettings.MainHallBackground = Name;
-			ServerSend("AccountUpdate", { VisualSettings: Player.VisualSettings });
+			ServerAccountUpdate.QueueData({ VisualSettings: Player.VisualSettings });
 		});
 	}
 	if (MouseIn(1885, 865, 90, 90) && LogQuery("RentRoom", "PrivateRoom")) {
@@ -618,7 +620,7 @@ function PrivateClick() {
 		BackgroundSelectionMake(backgrounds, index, Name => {
 			Player.VisualSettings.PrivateRoomBackground = Name;
 			PrivateBackground = Name;
-			ServerSend("AccountUpdate", { VisualSettings: Player.VisualSettings });
+			ServerAccountUpdate.QueueData({ VisualSettings: Player.VisualSettings });
 		});
 
 	}
@@ -728,7 +730,7 @@ function PrivateLoadCharacter(C) {
  * Triggered when a new character is added to the player's private room.
  * @param {object} Template - The base of the character, includes the name and appearance.
  * @param {string} Archetype - The type of character such as maid or mistress.
- * @param {boolean} CustomData - Whether or not the character has non-random traits.
+ * @param {boolean} [CustomData=false] - Whether or not the character has non-random traits.
  * @returns {void} - Nothing.
  */
 function PrivateAddCharacter(Template, Archetype, CustomData) {

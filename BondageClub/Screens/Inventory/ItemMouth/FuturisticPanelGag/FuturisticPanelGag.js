@@ -40,6 +40,14 @@ var AutoPunishKeywords = [
 "growl",
 "laugh",
 "giggle",
+"mutter",
+"stutter",
+"stammer",
+"grunt",
+"hiss",
+"screech",
+"bark",
+"mumble",
 ];
 
 var AutoPunishGagActionFlag = false;
@@ -78,7 +86,7 @@ var AutoPunishGagActionFlag = false;
 
 // In the validate function, add:
 /*
- 	return InventoryItemMouthFuturisticPanelGagValidate(C, Option)
+ 	return InventoryItemMouthFuturisticPanelGagValidate(C, Item)
 */
 
 
@@ -282,13 +290,14 @@ function InventoryItemMouthFuturisticPanelGagClick() {
 
 /**
  * Validates, if the chosen option is possible. Sets the global variable 'DialogExtendedMessage' to the appropriate error message, if not.
- * @param {Character} C - The character to validate the option for
+ * @param {Character} C - The character to validate the option
+ * @param {Item} Item - The equipped item
  * @returns {string} - Returns false and sets DialogExtendedMessage, if the chosen option is not possible.
  */
-function InventoryItemMouthFuturisticPanelGagValidate(C, Option) {
+function InventoryItemMouthFuturisticPanelGagValidate(C, Item = DialogFocusItem) {
 	var Allowed = "";
 
-	if (DialogFocusItem && DialogFocusItem.Property && DialogFocusItem.Property.LockedBy && !DialogCanUnlock(C, DialogFocusItem)) {
+	if (Item && Item.Property && Item.Property.LockedBy && !DialogCanUnlock(C, Item)) {
 		var collar = InventoryGet(C, "ItemNeck");
 		if (!collar || (!collar.Property || collar.Property.OpenPermission != true)) {
 			Allowed = DialogExtendedMessage = DialogFindPlayer("CantChangeWhileLockedFuturistic");
@@ -389,9 +398,12 @@ function InventoryItemMouthFuturisticPanelGagTrigger(C, Item, Reset, Options) {
 			InventoryItemMouthFuturisticPanelGagPublishActionTrigger(C, Item, Options[OptionLevel], Reset);
 		Item.Property.OriginalSetting = OriginalItemSetting; // After automatically changing it, we put it back to original setting
 
-		CharacterSetFacialExpression(C, "Eyebrows", "Soft", 10);
-		CharacterSetFacialExpression(C, "Blush", "Extreme", 15);
-		CharacterSetFacialExpression(C, "Eyes", "Lewd", 5);
+		const expressions = [
+			{ Group: "Eyebrows", Name: "Soft", Timer: 10 },
+			{ Group: "Blush", Name: "Extreme", Timer: 15 },
+			{ Group: "Eyes", Name: "Lewd", Timer: 5 },
+		];
+		InventoryExpressionTriggerApply(C, expressions);
 
 		/*var vol = 1
 		if (Player.AudioSettings && Player.AudioSettings.Volume) {
@@ -461,22 +473,7 @@ function AssetsItemMouthFuturisticPanelGagScriptUpdatePlayer(data, Options) {
 			}
 		}
 
-		if (Item.Property.AutoPunish == 3 && (gagaction || (ChatRoomLastMessage && ChatRoomLastMessage.length != LastMessages
-			&& !ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("(") && !ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("*") && ChatRoomLastMessage[ChatRoomLastMessage.length-1].replace(/[A-Za-zА-Яа-я]+/g, '') != ChatRoomLastMessage[ChatRoomLastMessage.length-1]
-			&& (!ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("/")
-			|| (keywords && (ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("/me") || ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("*")))))))
-			GagTriggerPunish = true;
-		if (Item.Property.AutoPunish == 2 && ChatRoomLastMessage && ChatRoomLastMessage.length != LastMessages
-			&& !ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("(") && !ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("*") && !ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("/")
-			&& (ChatRoomLastMessage[ChatRoomLastMessage.length-1].length > 25
-				|| (ChatRoomLastMessage[ChatRoomLastMessage.length-1].replace(/[A-Za-zА-Яа-я]+/g, '') != ChatRoomLastMessage[ChatRoomLastMessage.length-1] && (ChatRoomLastMessage[ChatRoomLastMessage.length-1] == ChatRoomLastMessage[ChatRoomLastMessage.length-1].toUpperCase()
-				|| (ChatRoomLastMessage[ChatRoomLastMessage.length-1].includes('!'))))))
-			GagTriggerPunish = true;
-		if (Item.Property.AutoPunish == 1 && ChatRoomLastMessage && ChatRoomLastMessage.length != LastMessages
-			&& !ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("(") && !ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("*") && !ChatRoomLastMessage[ChatRoomLastMessage.length-1].startsWith("/")
-			&& (ChatRoomLastMessage[ChatRoomLastMessage.length-1].replace(/[A-Za-zА-Яа-я]+/g, '') != ChatRoomLastMessage[ChatRoomLastMessage.length-1] && (ChatRoomLastMessage[ChatRoomLastMessage.length-1] == ChatRoomLastMessage[ChatRoomLastMessage.length-1].toUpperCase()
-				|| (ChatRoomLastMessage[ChatRoomLastMessage.length-1].includes('!')))))
-			GagTriggerPunish = true;
+		GagTriggerPunish = InventoryItemNeckAccessoriesCollarAutoShockUnitDetectSpeech(Item.Property.AutoPunish, gagaction, keywords, LastMessages);
 
 		if (ChatRoomTargetMemberNumber != null) {
 			GagTriggerPunish = false; // No trigger on whispers
