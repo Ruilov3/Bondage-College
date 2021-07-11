@@ -8,11 +8,6 @@ let TempCanvas;
 let ColorCanvas;
 /** @type {CanvasRenderingContext2D} */
 let CharacterCanvas;
-/** @type {Map<string, () => void>} */
-const DrawRunMap = new Map();
-let DrawRun = () => { };
-/** @type {string} */
-let DrawScreen;
 var DialogLeaveDueToItem = false;
 
 var BlindFlash = false;
@@ -32,6 +27,11 @@ var DrawLastDarkFactor = 0;
  * @type {Character[]}
  */
 var DrawLastCharacters = [];
+
+/**
+ * The last canvas position in format `[left, top, width, height]`
+ */
+var DrawCanvasPosition = [0, 0, 0, 0];
 
 /**
  * Converts a hex color string to a RGB color
@@ -358,7 +358,7 @@ function DrawCharacter(C, X, Y, Zoom, IsHeightResizeAllowed, DrawCanvas) {
 		}
 
 		// Draw the character name below herself
-		if ((C.Name != "") && ((CurrentModule == "Room") || (CurrentModule == "Online" && !(CurrentScreen == "ChatRoom" && ChatRoomHideIconState >= 3)) || ((CurrentScreen == "Wardrobe") && (C.ID != 0))) && (CurrentScreen != "Private"))
+		if ((C.Name != "") && ((CurrentModule == "Room") || (CurrentModule == "Online" && !(CurrentScreen == "ChatRoom" && ChatRoomHideIconState >= 3)) || ((CurrentScreen == "Wardrobe") && (C.ID != 0))) && (CurrentScreen != "Private") && (CurrentScreen != "PrivateRansom"))
 			if (!Player.IsBlind() || (Player.GameplaySettings && Player.GameplaySettings.SensDepChatLog == "SensDepLight")) {
 				DrawCanvas.font = CommonGetFont(30);
 				const NameOffset = CurrentScreen == "ChatRoom" && (ChatRoomCharacter.length > 5 || (ChatRoomCharacter.length == 5 && CommonPhotoMode)) && CurrentCharacter == null ? -4 : 0;
@@ -1222,17 +1222,12 @@ function DrawBlindFlash(intensity) {
 
 /**
  * Constantly looping draw process. Draws beeps, handles the screen size, handles the current blindfold state and draws the current screen.
+ * @param {number} time - The current time for frame
  * @returns {void} - Nothing
  */
-function DrawProcess() {
+function DrawProcess(time) {
 	// Clear the list of characters that were drawn last frame
 	DrawLastCharacters = [];
-
-	let RefreshDrawFunction = false;
-	if (DrawScreen != CurrentScreen) {
-		DrawScreen = CurrentScreen;
-		RefreshDrawFunction = true;
-	}
 
 	// Gets the current screen background and draw it, it becomes darker in dialog mode or if the character is blindfolded
 	let B = window[CurrentScreen + "Background"];
@@ -1262,25 +1257,21 @@ function DrawProcess() {
 		if (DarkFactor < 1.0) DrawRect(0, 0, 2000, 1000, "rgba(0,0,0," + (1.0 - DarkFactor) + ")");
 	}
 
-	if (RefreshDrawFunction) {
-		DrawRun = DrawRunMap.get(CurrentScreen);
-		if (DrawRun == null) {
-			if (typeof window[CurrentScreen + "Run"] === 'function') {
-				DrawRun = window[CurrentScreen + "Run"];
-				DrawRunMap.set(CurrentScreen, DrawRun);
-			} else {
-				console.log("Trying to launch invalid function: " + CurrentScreen + "Run()");
-				DrawRun = () => { };
-			}
-		}
-	}
-
 	// Draws the dialog screen or current screen if there's no loaded character
 	if (CurrentCharacter != null) DialogDraw();
-	else DrawRun();
+	else CurrentScreenFunctions.Run(time);
 
 	// Draws beep from online player sent by the server
 	ServerDrawBeep();
+
+	// Checks for screen resize/position change and calls appropriate function
+	const newCanvasPosition = [MainCanvas.canvas.offsetLeft, MainCanvas.canvas.offsetTop, MainCanvas.canvas.clientWidth, MainCanvas.canvas.clientHeight];
+	if (!CommonArraysEqual(newCanvasPosition, DrawCanvasPosition)) {
+		DrawCanvasPosition = newCanvasPosition;
+		if (CurrentScreenFunctions.Resize) {
+			CurrentScreenFunctions.Resize(false);
+		}
+	}
 
 	// Leave dialogs AFTER drawing everything
 	// If needed
@@ -1307,17 +1298,16 @@ function DrawProcess() {
  * @param {boolean} [Options.Hover] - Whether or not the button should enable hover behaviour (background color change)
  * @param {string} [Options.HoverBackground] - The background color that should be used on mouse hover, if any
  * @param {boolean} [Options.Disabled] - Whether or not the element is disabled (prevents hover functionality)
- * @param {boolean} [Options.IsFavorite] - Whether or not the element is a favorite. (Adds visual distinction)
+ * @param {string[]} [Options.Icons] - A list of small icons to display in the top-left corner
  * @returns {void} - Nothing
  */
 function DrawAssetPreview(X, Y, A, Options) {
-	let { C, Description, Background, Foreground, Vibrating, Border, Hover, HoverBackground, Disabled, IsFavorite} = (Options || {});
-	const DynamicPreviewIcon = C ? A.DynamicPreviewIcon(C) : "";
-	const Path = `${AssetGetPreviewPath(A)}/${A.Name}${DynamicPreviewIcon}.png`;
+	let { C, Description, Background, Foreground, Vibrating, Border, Hover, HoverBackground, Disabled, Icons} = (Options || {});
+	const DynamicPreviewImage = C ? A.DynamicPreviewImage(C) : "";
+	const Path = `${AssetGetPreviewPath(A)}/${A.Name}${DynamicPreviewImage}.png`;
 	if (Description == null) Description = C ? A.DynamicDescription(C) : A.Description;
-	if (IsFavorite) Description = "★ " + Description;
 	DrawPreviewBox(X, Y, Path, Description, { Background, Foreground, Vibrating, Border, Hover,
-		HoverBackground, Disabled });
+		HoverBackground, Disabled, Icons });
 }
 
 /**
@@ -1334,10 +1324,11 @@ function DrawAssetPreview(X, Y, A, Options) {
  * @param {boolean} [Options.Hover] - Whether or not the button should enable hover behaviour (background color change)
  * @param {string} [Options.HoverBackground] - The background color that should be used on mouse hover, if any
  * @param {boolean} [Options.Disabled] - Whether or not the element is disabled (prevents hover functionality)
+ * @param {string[]} [Options.Icons] - A list of images to draw in the top-left of the preview box
  * @returns {void} - Nothing
  */
 function DrawPreviewBox(X, Y, Path, Description, Options) {
-	let {Background, Foreground, Vibrating, Border, Hover, HoverBackground, Disabled} = (Options || {});
+	let {Background, Foreground, Vibrating, Border, Hover, HoverBackground, Disabled, Icons} = (Options || {});
 	const Height = Description ? 275 : 225;
 	Background = Background || "#fff";
 	Foreground = Foreground || "#000";
@@ -1349,7 +1340,30 @@ function DrawPreviewBox(X, Y, Path, Description, Options) {
 	const ImageX = Vibrating ? X + 1 + Math.floor(Math.random() * 3) : X + 2;
 	const ImageY = Vibrating ? Y + 1 + Math.floor(Math.random() * 3) : Y + 2;
 	if (Path !== "") DrawImageResize(Path, ImageX, ImageY, 221, 221);
+	DrawPreviewIcons(Icons, X, Y);
 	if (Description) DrawTextFit(Description, X + 110, Y + 250, 221, Foreground);
+}
+
+/**
+ * Draws a list of small icons over a preview box
+ * @param {string[]} icons - An array of icon names
+ * @param {number} X - The X co-ordinate to start drawing from
+ * @param {number} Y - The Y co-ordinate to start drawing from
+ * @returns {void} - Nothing
+ */
+function DrawPreviewIcons(icons, X, Y) {
+	if (icons && icons.length) {
+		const iconsPerCol = 4;
+		const iconSize = 50;
+		icons.forEach((icon, index) => {
+			const iconX = X + (iconSize + 5) * Math.floor(index / iconsPerCol);
+			const iconY = Y + (iconSize + 5) * (index % iconsPerCol);
+			DrawImageResize(`Icons/Previews/${icon}.png`, iconX, iconY, iconSize, iconSize);
+			if (MouseIn(iconX, iconY, iconSize * 0.9, iconSize * 0.9)) {
+				DrawButtonHover(iconX, iconY, 100, 65, DialogFindPlayer("PreviewIcon" + icon));
+			}
+		});
+	}
 }
 
 /**

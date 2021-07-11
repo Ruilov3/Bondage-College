@@ -76,6 +76,7 @@ Necklace,IDCard,ID Card
 Necklace,BlackHeart,Black Heart
 Necklace,ElegantHeartNecklace,Elegant Heart Necklace
 Necklace,Bandana,Bandana
+Necklace,FurScarf,Fur Scarf
 Suit,,Upper Suit
 Suit,Catsuit,Catsuit
 Suit,SeamlessCatsuit, Seamless Catsuit
@@ -113,6 +114,7 @@ ClothLower,PleatedSkirt,Pleated Skirt
 ClothLower,LongSkirt1,Long Skirt
 ClothLower,ShortPencilSkirt,Short Pencil Skirt
 ClothLower,HaremPants,Harem Pants
+ClothLower,ShortPlaidSkirt,Short Plaid Skirt
 SuitLower,,Suit Lower
 SuitLower,Catsuit,Catsuit
 SuitLower,SeamlessCatsuit, Seamless Catsuit
@@ -169,6 +171,7 @@ Bra,LeatherBreastBinder,Leather Breast Binder
 Bra,SilkStraps,Silk Straps
 Bra,FullLatexBra,Full Latex Bra
 Bra,HaremBra,Harem Bra
+Bra,FlowerBra,Flower Bra
 Corset,,Corset
 Corset,Corset1,Corset + Garters
 Corset,Corset2,Corset
@@ -191,6 +194,7 @@ Panties,Bikini1,Frilled Bikini
 Panties,Diapers1,Diaper
 Panties,Diapers2,Plastic Covered Diaper
 Panties,Diapers3,Satin Covered Diaper
+Panties,Diapers4,Patterned Diaper
 Panties,Panties16,Frill Panties
 Panties,MaidPanties1,Maid Panties
 Panties,LatexPanties1,Crotchless Latex Panties
@@ -295,6 +299,7 @@ Hat,Veil1,Veil Half Face
 Hat,Veil2,Veil Full Face
 Hat,BakerBoyHat,Baker Boy Hat
 Hat,ReindeerBand,Reindeer Hairband
+Hat,FurHeadband,Fur Headband
 HairAccessory3,,Hair Accessory
 HairAccessory3,Ribbons1,Hair Ribbon 1
 HairAccessory3,Ribbons2,Hair Ribbon 2
@@ -374,7 +379,11 @@ Gloves,GlovesFur,Gloves with Fur
 Gloves,Catsuit,Catsuit Gloves
 Gloves,SeethroughSuit,See-through Gloves
 Gloves,CowPrintedGloves,Cow Printed Gloves
-Gloves,LatexElbowGloves, Latex Elbow Gloves
+Gloves,LatexElbowGloves,Latex Elbow Gloves
+Bracelet,,Bracelet
+Bracelet,BowBand,Bow Band
+Bracelet,KinkBracelet, Kinky Band
+Bracelet,LesBand,5 Color Band
 Glasses,,Glasses
 Glasses,Glasses1,Style 1
 Glasses,Glasses2,Style 2
@@ -972,9 +981,11 @@ ItemNeckAccessories,CollarFlower,Flower
 ItemNeckAccessories,CollarRose,Rose
 ItemNeckAccessories,CollarCowBell,Cowbell
 ItemNeckAccessories,CollarPupBone,Pup Bone
+ItemNeckAccessories,Key,Key
 ItemNeckRestraints,,Collar
 ItemNeckRestraints,CollarChainLong,Long Chain
 ItemNeckRestraints,CollarChainShort,Short Chain
+ItemNeckRestraints,Post,Hitching Post
 ItemNeckRestraints,CollarLeash,Leash
 ItemNeckRestraints,CollarLeashTaken,Pulled Leash
 ItemNeckRestraints,ChainLeash,Chain Leash
@@ -1273,6 +1284,7 @@ ItemDevices,ChangingTable,Changing Table
 ItemDevices,Locker,Locker
 ItemDevices,SmallLocker,Small Locker
 ItemDevices,ConcealingCloak,Concealing Cloak
+ItemDevices,Kennel,Heavy Kennel
 ItemDevices,PetBed,Pet Bed
 ItemDevices,TransportWoodenBox,Transport Box
 ItemDevices,VacCube,Vac-Cube

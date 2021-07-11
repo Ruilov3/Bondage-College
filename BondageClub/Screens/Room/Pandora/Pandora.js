@@ -11,7 +11,7 @@ var PandoraModeAppearance = null;
 var PandoraMessage = null;
 var PandoraParty = [];
 var PandoraFightCharacter = null;
-var PandoraRandomNPCList = ["Member", "Mistress", "Slave", "Maid", "Guard"];
+var PandoraRandomNPCList = ["MemberNew", "MemberOld", "Mistress", "Slave", "Maid", "Guard"];
 var PandoraMoveDirectionTimer = { Direction: "", Timer: 0 };
 var PandoraTargetRoom = null;
 var PandoraClothes = "Random";
@@ -22,7 +22,7 @@ var PandoraMaxWillpower = 20;
  * NPC Dialog functions
  * @returns {boolean} - TRUE if the dialog option will be available to the player
  */
-function PandoraCanStartRecruit() { return ((CurrentCharacter.Recruit == null) || (CurrentCharacter.Recruit == 0)); }
+function PandoraCanStartRecruit() { return (((CurrentCharacter.Recruit == null) || (CurrentCharacter.Recruit == 0)) && !CurrentCharacter.IsNaked()); }
 function PandoraCanRecruit() { return (CurrentCharacter.Recruit + (InfiltrationPerksActive("Recruiter") ? 0.25 : 0) >= CurrentCharacter.RecruitOdds); }
 function PandoraCharacterCanJoin() { return ((PandoraParty.length == 0) || (PandoraParty[0].Name != CurrentCharacter.Name)); }
 function PandoraCharacterCanLeave() { return ((PandoraParty.length == 1) && (PandoraParty[0].Name == CurrentCharacter.Name) && ((PandoraCurrentRoom.Character == null) || (PandoraCurrentRoom.Character.length <= 1))); }
@@ -41,14 +41,15 @@ function PandoraLoad() {
 
 /**
  * Returns the color of the direction buttons, it can change if the direction was recently navigated to
+ * The Cartographer perk can show the returning path in yellow
  * @param {"North" | "South" | "East" | "West"} Direction - The cardinal direction
  * @returns {string} - The color to use
  */
 function PandoraDirectionButtonColor(Direction) {
 	if ((PandoraMoveDirectionTimer.Timer >= CommonTime()) && (PandoraMoveDirectionTimer.Direction === Direction))
-		return PandoraDirectionAvailable(Direction) ? "#80FF80" : "#408040";
-	else
-		return PandoraDirectionAvailable(Direction) ? "White" : "#BF8080";
+		return PandoraDirectionAvailable(Direction) ? (((Direction == PandoraCurrentRoom.DirectionMap[0]) && InfiltrationPerksActive("Cartographer") && (PandoraCurrentRoom.Background != "Entrance")) ? "#BFFF40" : "#80FF80") : "#408040";
+	else 
+		return PandoraDirectionAvailable(Direction) ? (((Direction == PandoraCurrentRoom.DirectionMap[0]) && InfiltrationPerksActive("Cartographer") && (PandoraCurrentRoom.Background != "Entrance")) ? "#FFFF00" : "White") : "#BF8080";
 }
 
 /**
@@ -443,9 +444,14 @@ function PandoraGenerateRoom(EntryRoom, DirectionFrom, RoomLevel, MaxRoom) {
 		let Continue = false;
 		let PathNum;
 		while (!Continue) {
-			PathNum = Math.floor(Math.random() * 4);
-			if (EntryRoom.Background.indexOf("Tunnel") == 0) PathNum = PandoraDirectionListFrom.indexOf(DirectionFrom);
-			Continue = ((PandoraDirectionList.indexOf(DirectionFrom) != PathNum) && (Path.indexOf(PathNum) < 0));
+			if (EntryRoom.Background.indexOf("Tunnel") == 0) {
+				PathNum = PandoraDirectionListFrom.indexOf(DirectionFrom);
+				Continue = true;
+			}
+			else {
+				PathNum = Math.floor(Math.random() * 4);
+				Continue = ((PandoraDirectionList.indexOf(DirectionFrom) != PathNum) && (Path.indexOf(PathNum) < 0));
+			}
 		}
 		Path.push(PathNum);
 
@@ -462,12 +468,9 @@ function PandoraGenerateRoom(EntryRoom, DirectionFrom, RoomLevel, MaxRoom) {
 			if ((RoomBack == "Cell") && (Math.random() >= 0.9)) RoomBack = "Rest0";
 			else RoomBack = RoomBack + Math.floor(Math.random() * 7);
 			Continue = (RoomBack !== EntryRoom.Background);
-			if (Continue)
-				for (let R = 0; R < PandoraRoom.length; R++)
-					if ((PandoraRoom[R].Background == RoomBack) && (Math.random() >= 0.25)) {
-						Continue = false;
-						break;
-					}
+			for (let R = 0; Continue && (R < PandoraRoom.length); R++)
+				if ((PandoraRoom[R].Background == RoomBack) && (Math.random() >= 0.25))
+					Continue = false;
 		}
 
 		// Creates the room
@@ -585,9 +588,14 @@ function PandoraBuildMainHall() {
 			}
 			if (InfiltrationMission == "Rescue") {
 				let Victim = PandoraGenerateNPC("Rescue", "Victim", InfiltrationTarget.Name, true);
-				if (Math.random() >= 0.333) CharacterRandomUnderwear(Victim);
-				else if (Math.random() >= 0.5) CharacterNaked(Victim);
-				CharacterFullRandomRestrain(Victim, "LOT", true);
+				if ((InfiltrationTarget.PrivateRoom != null) && InfiltrationTarget.PrivateRoom) {
+					Victim.Appearance = PrivateRansomCharacter.Appearance.slice(0);
+					CharacterRefresh(Victim);
+				} else {
+					if (Math.random() >= 0.333) CharacterRandomUnderwear(Victim);
+					else if (Math.random() >= 0.5) CharacterNaked(Victim);
+					CharacterFullRandomRestrain(Victim, "LOT", true);
+				}
 				Room.Character.push(Victim);
 				let Guard = PandoraGenerateNPC("Rescue", "Guard", "RANDOM", false);
 				Room.PathMap[0].Character.push(Guard);
@@ -759,6 +767,9 @@ function PandoraCanJoinPrivateRoom() { return (LogQuery("RentRoom", "PrivateRoom
 function PandoraCharacterJoinPrivateRoom() {
 	CurrentScreen = "Private";
 	PrivateAddCharacter(CurrentCharacter, (CurrentCharacter.Type === "Slave") ? "Submissive" : null);
+	let C = PrivateCharacter[PrivateCharacter.length - 1];
+	C.FromPandora = true;
+	ServerPrivateCharacterSync();
 	CurrentScreen = "Pandora";
 	PandoraRemoveCurrentCharacter();
 }
@@ -940,4 +951,21 @@ function PandoraPunishmentStart() {
  */
 function PandoraPlayerPay(Amount) {
 	CharacterChangeMoney(Player, parseInt(Amount));
+}
+
+/**
+ * When the player pays an NPC to wear her clothes
+ * @returns {void} - Nothing
+ */
+function PandoraBuyRandomClothes() {
+	CharacterChangeMoney(Player, -10);
+	CharacterNaked(Player);
+	CharacterTransferItem(CurrentCharacter, Player, "Cloth");
+	CharacterTransferItem(CurrentCharacter, Player, "ClothLower");
+	CharacterTransferItem(CurrentCharacter, Player, "Bra");
+	CharacterTransferItem(CurrentCharacter, Player, "Panties");
+	CharacterTransferItem(CurrentCharacter, Player, "Socks");
+	CharacterTransferItem(CurrentCharacter, Player, "Shoes");
+	CharacterNaked(CurrentCharacter);
+	PandoraClothes = "Random";
 }
