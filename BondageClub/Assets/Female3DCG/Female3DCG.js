@@ -411,6 +411,13 @@ var AssetFemale3DCG = [
 				],
 			},
 			{ Name: "ShortPlaidSkirt", Value: 40, HideItem: ["ItemDevicesStrapOnSmooth", "ItemDevicesStrapOnStuds"], Expose: ["ItemVulva", "ItemVulvaPiercings", "ItemButt"], Attribute: ["Skirt"], },
+			{ Name: "FarmersDaughterSkirt", Value: 35, Left: 69, ParentGroup: null, Atrribute: ["Skirt"], DefaultColor: ["#fdfdfd","#664935","#fdfdfd"], HideItem:["ItemDevicesStrapOnSmooth", "ItemDevicesStrapOnStudes"], Expose: ["ItemVulva", "ItemVulvaPiercings", "ItemButt"], AllowPose: ["Kneel"], HideForPose: ["KneelingSpread", "Horse"],
+			  Layer: [
+				  { Name: "Apron"},
+				  { Name: "Skirt"},
+				  { Name: "Trim"},
+			  ],
+		},
 		],
 		Color: ["Default", "#bbbbbb", "#808080", "#202020", "#aa8080", "#80aa80", "#8080aa", "#aaaa80", "#80aaaa", "#aa80aa", "#cc3333", "#33cc33", "#3333cc", "#cccc33", "#33cccc", "#cc33cc"]
 	},
